@@ -42,6 +42,23 @@ def upload_to_s3(image_url):
     s3_url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/path_in_bucket"
     return s3_url
 
+def generate_character_sheet(character):
+    """Generate a HTML character sheet."""
+    return f"""
+    <div style="border:2px solid black;padding:20px;">
+        <h2>{character['name']}</h2>
+        <p><strong>Description:</strong> {character['description']}</p>
+        <p><strong>Race:</strong> {character['race']}</p>
+        <p><strong>Backstory:</strong> {character['backstory']}</p>
+        <p><strong>Alignment:</strong> {character['alignment']}</p>
+        <p><strong>Traits:</strong> {character['traits']}</p>
+        <p><strong>Ideals:</strong> {character['ideals']}</p>
+        <p><strong>Bonds:</strong> {character['bonds']}</p>
+        <p><strong>Flaws:</strong> {character['flaws']}</p>
+        <img src="{character['portrait_url']}" alt="Character Portrait" style="width:200px;height:200px;">
+    </div>
+    """
+
 def main():
     """Main function for the Streamlit app."""
     st.title("D&D Character Generator with Portraits")
@@ -59,22 +76,25 @@ def main():
         "flaws": st.text_area("Flaws")
     }
 
+    portrait_prompt = st.text_area("Portrait Prompt (Optional. If empty, we'll generate one based on the description.)")
+
     # Generate and Display Character Sheet
     if st.button("Generate Character Sheet"):
         try:
+            # Fill in missing details
             character = asyncio.run(generate_character_details(character))
-            st.write(character)
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-
-    # Portrait Generation
-    portrait_prompt = st.text_area("Portrait Prompt")
-    if portrait_prompt and st.button("Generate Portraits"):
-        try:
+            
+            # Get portrait
+            if not portrait_prompt:
+                portrait_prompt = f"A portrait of {character['name']}, a {character['description']}"
             image_url = asyncio.run(generate_portrait(portrait_prompt))
-            st.image(image_url)
             s3_url = upload_to_s3(image_url)
-            st.write(f"Image saved at: {s3_url}")
+            character["portrait_url"] = s3_url
+            
+            # Display character sheet
+            html_sheet = generate_character_sheet(character)
+            st.markdown(html_sheet, unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
 
