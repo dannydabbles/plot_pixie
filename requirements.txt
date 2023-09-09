@@ -3,3 +3,5 @@ pandas
 streamlit
 openai
 boto3
+requests
+
