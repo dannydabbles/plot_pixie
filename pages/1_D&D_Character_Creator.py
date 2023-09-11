@@ -87,7 +87,16 @@ def main():
     """
     Main function for the Streamlit app.
     """
-    st.title("D&D Character Generator with Portraits")
+    #st.title("D&D Character Generator with Portraits")
+
+    st.set_page_config(page_title="D&D Character Creator", page_icon="📈")
+
+    st.markdown("# D&D Character Creator")
+    st.sidebar.header("D&D Character Creator")
+    st.write(
+            """This app generates a D&D character and a character sheet with a portrait.
+            """
+    )
 
     # Default visible fields
     character = {
