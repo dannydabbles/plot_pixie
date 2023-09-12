@@ -23,6 +23,10 @@ os.makedirs(IMAGE_DIRECTORY, exist_ok=True)
 os.makedirs(CHARACTER_SHEET_DIRECTORY, exist_ok=True)
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
+# Initialize the session state for the character if not present
+if "character" not in st.session_state:
+    st.session_state.character = {}
+
 def get_character_age():
     """
     Generate a weighted random age for a character between 0 and 500 years old.
@@ -126,7 +130,7 @@ def generate_portrait(prompt):
     """
     response = openai.Image.create(prompt=prompt, n=1, size="256x256")
     image_url = response.data[0]['url']
-    filename = f"{uuid4()}.png"
+    filename = f".png"
     return save_dalle_image_to_disk(image_url, filename, 1)
 
 def create_pdf_character_sheet(character, portrait_filenames):
@@ -149,7 +153,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
             pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
     for filename in portrait_filenames:
         pdf.image(filename, x=10, y=None, w=90)
-    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{uuid4()}.pdf")
+    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f".pdf")
     pdf.output(pdf_file_path)
     return pdf_file_path
 
@@ -286,11 +290,13 @@ def input_abilities_and_skills(placeholder, character_data):
             "Orc", "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal",
             "Primordial", "Sylvan", "Undercommon", "Custom"
         ]
-        
+
+        # Ensure that default languages are in the available options
+        default_languages = [lang for lang in character_data.get("languages", []) if lang in languages_options]
         languages = st.multiselect(
             "Languages", 
             languages_options, 
-            default=character_data.get("languages") or "", 
+            default=default_languages, 
             key=f"languages_multiselect_{uuid4()}"
         )
         
@@ -310,13 +316,15 @@ def input_abilities_and_skills(placeholder, character_data):
             "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival", "Custom"
         ]
         
+        # Ensure that default skills are in the available options
+        default_skills = [skill for skill in character_data.get("skills", []) if skill in skills_options]
         skills = st.multiselect(
             "Skills", 
             skills_options, 
-            default=character_data.get("skills", []), 
+            default=default_skills, 
             key=f"skills_multiselect_{uuid4()}"
-        )
-        
+        ) 
+
         custom_skill = ""
         if "Custom" in skills:
             custom_skill = st.text_input(
@@ -436,39 +444,6 @@ def input_spellcasting(placeholder, character_data):
             "spell_attack_bonus": spell_attack_bonus
         }
 
-def generate_and_display_character_sheet(character):
-    """
-    Generate the character sheet, save the data, and display it to the user.
-    
-    Args:
-    - character (dict): Dictionary containing all character attributes.
-    """
-    if st.button("Generate Character Sheet"):
-        # Fetch filled out character data from the API
-        generated_data = get_character_data(character)
-        character_data = transform_to_dict(generated_data)
-        character.update(character_data)
-
-        # Generate a portrait using the provided "portrait_prompt"
-        portrait_prompt = character.get("portrait_prompt", "")
-        portrait_filename = generate_portrait(portrait_prompt)
-        
-        # Generate HTML character sheet and save
-        html_filename = generate_html_character_sheet(character, [portrait_filename])
-
-        # Save character data as parquet
-        df = pd.DataFrame([character])
-        parquet_filename = f"{DATA_DIRECTORY}{uuid4()}.parquet"
-        df.to_parquet(parquet_filename)
-
-        # Display the saved locations to the user
-        st.write(f"Character sheet saved at {html_filename} and data saved at {parquet_filename}")
-        st.markdown(f"[Click here to view the character sheet]({html_filename})")
-
-        # Render the HTML character sheet
-        with open(html_filename, 'r') as file:
-            st.components.v1.html(file.read(), height=1000)
-
 def transform_to_dict(data_str):
     """
     Transform the provided data string into a dictionary.
@@ -508,23 +483,19 @@ def main():
     Main function for the Streamlit app.
     """
     st.markdown("# D&D Character Creator")
-    
-    character = {}
+   
+    character = st.session_state.character 
 
     # Initial user input using placeholders
-    user_input_character = {
-        "name": placeholders["name"].text_input("Character Name", ""),
-        "description": placeholders["description"].text_area("Description", "")
-    }
+    character["name"] = placeholders["name"].text_input("Character Name", character.get("name", ""))
+    character["description"] = placeholders["description"].text_area("Description", character.get("description", ""))
 
     # Collect user's input for the other sections
-    user_input_character.update(input_basic_information(placeholders["basic_information"], user_input_character))
-    user_input_character.update(input_personality_and_backstory(placeholders["personality_and_backstory"], user_input_character))
-    user_input_character.update(input_abilities_and_skills(placeholders["abilities_and_skills"], user_input_character))
-    user_input_character.update(input_equipment_and_treasures(placeholders["equipment_and_treasures"], user_input_character))
-    user_input_character.update(input_spellcasting(placeholders["spellcasting"], user_input_character))
-    
-    character.update(user_input_character)
+    character.update(input_basic_information(placeholders["basic_information"], character))
+    character.update(input_personality_and_backstory(placeholders["personality_and_backstory"], character))
+    character.update(input_abilities_and_skills(placeholders["abilities_and_skills"], character))
+    character.update(input_equipment_and_treasures(placeholders["equipment_and_treasures"], character))
+    character.update(input_spellcasting(placeholders["spellcasting"], character))    
 
     # Check if user wants to generate a character sheet
     if st.button("Generate Character Sheet"):
@@ -534,13 +505,13 @@ def main():
         character.update(character_data)
 
         # Update placeholders with generated data
-        placeholders["name"].text_input("Character Name", character['name'])
-        placeholders["description"].text_area("Description", character['description'])
-        input_basic_information(placeholders["basic_information"], character)
-        input_personality_and_backstory(placeholders["personality_and_backstory"], character)
-        input_abilities_and_skills(placeholders["abilities_and_skills"], character)
-        input_equipment_and_treasures(placeholders["equipment_and_treasures"], character)
-        input_spellcasting(placeholders["spellcasting"], character)
+        character["name"] = placeholders["name"].text_input("Character Name", character['name'], key=f"character_name_input_{uuid4()}")
+        character["description"] = placeholders["description"].text_area("Description", character['description'], key=f"character_description_input_{uuid4()}")
+        character.update(input_basic_information(placeholders["basic_information"], character))
+        character.update(input_personality_and_backstory(placeholders["personality_and_backstory"], character))
+        character.update(input_abilities_and_skills(placeholders["abilities_and_skills"], character))
+        character.update(input_equipment_and_treasures(placeholders["equipment_and_treasures"], character))
+        character.update(input_spellcasting(placeholders["spellcasting"], character))
         
         # Generate portrait prompts and portraits
         num_portraits = st.slider("Number of Portraits", 1, 5)
