@@ -1,4 +1,5 @@
 import os
+import json
 import openai
 import streamlit as st
 import pandas as pd
@@ -13,6 +14,7 @@ CURRENT_DIRECTORY = os.getcwd()
 IMAGE_DIRECTORY = f"{CURRENT_DIRECTORY}/images/"
 CHARACTER_SHEET_DIRECTORY = f"{CURRENT_DIRECTORY}/character_sheets/"
 DATA_DIRECTORY = f"{CURRENT_DIRECTORY}/data/"
+MAX_TOKENS = 1500
 
 # Ensure directories exist
 os.makedirs(IMAGE_DIRECTORY, exist_ok=True)
@@ -29,9 +31,50 @@ def get_character_data(character):
     Returns:
     - str: Generated character description.
     """
-    prompt = f"Describe a D&D character with the following attributes: {character}"
-    response = openai.Completion.create(model="text-davinci-003", prompt=prompt, max_tokens=150)
-    return response.choices[0].text.strip()
+    #prompt = f"Describe a D&D character with the following attributes.  Use propert JSON formatting and follow the source object's layout. Generate content for any empty fields.\n\n{json.dumps(character)}"
+    #print(f"Prompt: {prompt}")
+    examples = [
+       {
+  "name": "Liora Moonshadow",
+  "description": "A graceful elf with silver hair and piercing blue eyes, adept in the arcane arts and carrying the wisdom of the ages.",
+  "age": 124,
+  "race": "High Elf",
+  "class": "Wizard",
+  "alignment": "Neutral",
+  "background": "Sage",
+  "personality_traits": "I am lost in thought, often oblivious to my surroundings. I'm fascinated by ancient artifacts and the secrets they hold.",
+  "ideals": "Knowledge. The pursuit of knowledge is the greatest endeavor.",
+  "bonds": "I am on a quest to find an ancient spellbook said to contain the secrets of the universe.",
+  "flaws": "I often overlook immediate dangers, being too engrossed in my studies or thoughts.",
+  "character_backstory": "Liora hails from the ancient city of Ellyndor. Trained in the Grand Library, she became obsessed with a lost spellbook of immense power. Now she travels the land in search of this artifact, using her magic to uncover hidden truths.",
+  "allies_enemies": "Allied with the Keepers of the Grand Library. Beware of the Dark Enchantress, who also seeks the spellbook.",
+  "languages": ["Common", "Elvish", "Draconic", "Sylvan"],
+  "skills": ["Arcana", "History"],
+  "custom_language": "Ancient High Elvish",
+  "custom_skill": "Magical artifact identification",
+  "equipment": "Staff of the Arcane, robes of the enlightened, spellbook, and a pouch of spell components",
+  "treasure": "A crystal orb said to have been touched by the first wizards",
+  "custom_equipment": "Silver circlet that enhances focus",
+  "custom_treasure": "A shard from the Mirror of Fates",
+  "spellcasting_class": "Wizard",
+  "spellcasting_ability": "Intelligence",
+  "spell_save_dc": "16",
+  "spell_attack_bonus": "+8"
+} 
+    ]
+    messages=[
+        {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
+        {"role": "system", "content": f"Here are some example character sheets:\n\n{examples}"},
+        {"role": "system", "content": "The user will provide a JSON character sheet."},
+        {"role": "user", "content": f"{json.dumps(character)}"},
+        {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank."},
+    ]
+    print(f"Messages: {messages}")
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=MAX_TOKENS)
+    #import ipdb; ipdb.set_trace()
+    result = response.choices[0].message.content
+    print(f"Result: {result}")
+    return result
 
 def save_dalle_image_to_disk(image_url, character_name, portrait_num):
     """
@@ -128,6 +171,8 @@ def input_basic_information(character_data):
             "alignment": alignment,
             "background": background
         }
+
+        
 
 def input_personality_and_backstory(character_data):
     """
@@ -276,13 +321,9 @@ def transform_to_dict(data_str):
     Returns:
     - dict: The transformed dictionary.
     """
-    data_dict = {}
-    lines = data_str.split("\n")  # Split the string by newline to get individual lines
-    for line in lines:
-        if ": " in line:
-            key, value = line.split(": ", 1)  # Split each line into key and value
-            data_dict[key.strip()] = value.strip()  # Strip any leading/trailing whitespace and add to the dictionary
-
+    print(f"Data string: {data_str}")
+    #import ipdb; ipdb.set_trace()
+    data_dict = json.loads(data_str)  # Convert the string to a dictionary
     return data_dict
 
 def main():
@@ -294,44 +335,41 @@ def main():
     
     character = {}
 
+    # Initialize user input dictionary
     user_input_character = {
-        "name": "",
-        "description": "",
-        "race": "",
-        "class": "",
-        "alignment": "",
-        "background": "",
-        "age": "",
-        "gender": "",
-        "subrace": "",
+        "name": st.text_input("Character Name", ""),
+        "description": st.text_area("Description", "")
     }
 
-    # Fetch filled out character data from the API
-    generated_data = get_character_data(user_input_character)
+    # Use the user's input for the other sections
+    user_input_character.update(input_basic_information(user_input_character))
+    user_input_character.update(input_personality_and_backstory(user_input_character))
+    user_input_character.update(input_abilities_and_skills(user_input_character))
+    user_input_character.update(input_equipment_and_treasures(user_input_character))
+    user_input_character.update(input_spellcasting(user_input_character))
+
     #import ipdb; ipdb.set_trace()
-    character_data = transform_to_dict(generated_data)
- 
-    # Combine the user's input and the generated data
     character.update(user_input_character)
-    character.update(character_data)
 
-    character_name = st.text_input("Character Name", character_data.get("name", ""))
-    character.update({"name": character_name})
-    character_description = st.text_area("Description", character_data.get("description", ""))
-    character.update({"description": character_description})
- 
-
-    # Use the updated character data as defaults for the input functions
-    character.update(input_basic_information(character))
-    character.update(input_personality_and_backstory(character))
-    character.update(input_abilities_and_skills(character))
-    character.update(input_equipment_and_treasures(character))
-    character.update(input_spellcasting(character))
-
+    # Check if user wants to generate a character sheet
     if st.button("Generate Character Sheet"):
         # Fetch filled out character data from the API
-        character["description"] = get_character_data(character)
+        generated_data = get_character_data(character)
+        character_data = transform_to_dict(generated_data)
+        character.update(character_data)
 
+        print(f"Character: {character}")
+
+        # Update all the user input fields with the generated data
+        for key in character:
+            if key in user_input_character:
+                user_input_character[key] = character[key]
+
+        # Refresh the Streamlit app to display the updated character data
+        st.experimental_rerun()
+
+    # Check if user wants to save the character sheet and portraits
+    if st.button("Save Character and Portraits"):
         # Generate portrait prompts and portraits
         num_portraits = st.slider("Number of Portraits", 1, 5)
         portrait_filenames = []
@@ -349,13 +387,9 @@ def main():
         parquet_filename = f"{DATA_DIRECTORY}{uuid4()}.parquet"
         df.to_parquet(parquet_filename)
 
-        # Display the information to the user
+        # Display the saved locations to the user
         st.write(f"Character sheet saved at {html_filename} and data saved at {parquet_filename}")
         st.markdown(f"[Click here to view the character sheet]({html_filename})")
-
-        # Render the HTML character sheet
-        with open(html_filename, 'r') as file:
-            st.components.v1.html(file.read(), height=1000)
 
 if __name__ == "__main__":
     main()
