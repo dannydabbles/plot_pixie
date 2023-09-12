@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import random
 import openai
 import streamlit as st
 import pandas as pd
@@ -21,6 +22,18 @@ MAX_TOKENS = 1500
 os.makedirs(IMAGE_DIRECTORY, exist_ok=True)
 os.makedirs(CHARACTER_SHEET_DIRECTORY, exist_ok=True)
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+def get_character_age():
+    """
+    Generate a weighted random age for a character between 0 and 500 years old.
+
+    Returns:
+    - int: The age of the character.
+    """
+    age_weights = [0.05, 0.1, 0.45, 0.2, 0.1, 0.05, 0.05]
+    age_choices = [random.randint(1, 13), random.randint(13, 17), random.randint(18, 35), random.randint(36, 50), random.randint(50, 100), random.randint(101, 200), random.randint(201, 500)]
+    age = random.choices(age_choices, weights=age_weights)[0]
+    return age
 
 def get_character_data(character):
     """
@@ -66,7 +79,7 @@ def get_character_data(character):
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
         {"role": "system", "content": f"Here are some example character sheets:\n\n{examples}"},
-        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is consistent and the character is playable."},
+        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable."},
         {"role": "user", "content": f"{json.dumps(character)}"},
         {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank."},
     ]
@@ -147,20 +160,20 @@ def input_basic_information(placeholder, character_data):
     Returns:
     - dict: Dictionary containing basic character information.
     """
-    with placeholder.expander("Basic Information"):
-        race_options = ["Human", "Elf", "Dwarf", "Orc", "Tiefling", "Gnome", "Halfling", "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Triton", "Custom"]
-        class_options = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
-        alignment_options = ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
-        background_options = ["Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin", "Custom"]
+    with placeholder.expander("Basic Information", expanded=True):
+        race_options = ["", "Human", "Elf", "Dwarf", "Orc", "Tiefling", "Gnome", "Halfling", "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Triton", "Custom"]
+        class_options = ["", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
+        alignment_options = ["", "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
+        background_options = ["", "Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin", "Custom"]
         
-        race_key = "race_select_" + str(uuid.uuid4())  # Unique key for the race selectbox
-        class_key = "class_select_" + str(uuid.uuid4())  # Unique key for the class selectbox
-        alignment_key = "alignment_select_" + str(uuid.uuid4())  # Unique key for the alignment selectbox
-        background_key = "background_select_" + str(uuid.uuid4())  # Unique key for the background selectbox
-        age_key = "age_input_" + str(uuid.uuid4())  # Unique key for the age input
-        custom_race_key = "custom_race_input_" + str(uuid.uuid4())  # Unique key for the custom race input
-        custom_class_key = "custom_class_input_" + str(uuid.uuid4())  # Unique key for the custom class input
-        custom_background_key = "custom_background_input_" + str(uuid.uuid4())  # Unique key for the custom background input
+        race_key = "race_select_" #+ str(uuid.uuid4())  # Unique key for the race selectbox
+        class_key = "class_select_" #+ str(uuid.uuid4())  # Unique key for the class selectbox
+        alignment_key = "alignment_select_" #+ str(uuid.uuid4())  # Unique key for the alignment selectbox
+        background_key = "background_select_" #+ str(uuid.uuid4())  # Unique key for the background selectbox
+        age_key = "age_input_" #+ str(uuid.uuid4())  # Unique key for the age input
+        custom_race_key = "custom_race_input_" #+ str(uuid.uuid4())  # Unique key for the custom race input
+        custom_class_key = "custom_class_input_" #+ str(uuid.uuid4())  # Unique key for the custom class input
+        custom_background_key = "custom_background_input_" #+ str(uuid.uuid4())  # Unique key for the custom background input
         
         race = st.selectbox("Race", race_options, key=race_key)
         if race == "Custom":
@@ -174,8 +187,12 @@ def input_basic_information(placeholder, character_data):
         background = st.selectbox("Background", background_options, key=background_key)
         if background == "Custom":
             background = st.text_input("Custom Background", character_data.get("background", ""), key=custom_background_key)
-        
-        age = st.number_input("Age", min_value=1, max_value=500, step=1, value=int(character_data.get("age", 25) or "25"), key=age_key)
+
+        age_num = character_data.get("age")
+        if not age_num:
+            age_num = get_character_age()
+        age_num = int(age_num)
+        age = st.number_input("Age", min_value=1, max_value=500, step=1, value=age_num, key=age_key)
 
         return {
             "age": age,
@@ -196,13 +213,13 @@ def input_personality_and_backstory(placeholder, character_data):
     Returns:
     - dict: Dictionary containing character's personality and backstory.
     """
-    with placeholder.expander("Personality & Backstory"):
-        personality_traits_key = "personality_traits_textarea_" + str(uuid.uuid4())
-        ideals_key = "ideals_textarea_" + str(uuid.uuid4())
-        bonds_key = "bonds_textarea_" + str(uuid.uuid4())
-        flaws_key = "flaws_textarea_" + str(uuid.uuid4())
-        character_backstory_key = "character_backstory_textarea_" + str(uuid.uuid4())
-        allies_enemies_key = "allies_enemies_textarea_" + str(uuid.uuid4())
+    with placeholder.expander("Personality & Backstory", expanded=True):
+        personality_traits_key = "personality_traits_textarea_" #+ str(uuid.uuid4())
+        ideals_key = "ideals_textarea_" #+ str(uuid.uuid4())
+        bonds_key = "bonds_textarea_" #+ str(uuid.uuid4())
+        flaws_key = "flaws_textarea_" #+ str(uuid.uuid4())
+        character_backstory_key = "character_backstory_textarea_" #+ str(uuid.uuid4())
+        allies_enemies_key = "allies_enemies_textarea_" #+ str(uuid.uuid4())
         
         personality_traits = st.text_area("Personality Traits", character_data.get("personality_traits", ""), key=personality_traits_key)
         ideals = st.text_area("Ideals", character_data.get("ideals", ""), key=ideals_key)
@@ -231,11 +248,11 @@ def input_abilities_and_skills(placeholder, character_data):
     Returns:
     - dict: Dictionary containing character's abilities and skills.
     """
-    with placeholder.expander("Abilities & Skills"):
-        languages_options_key = "languages_multiselect_" + str(uuid.uuid4())
-        custom_language_key = "custom_language_input_" + str(uuid.uuid4())
-        skills_options_key = "skills_multiselect_" + str(uuid.uuid4())
-        custom_skill_key = "custom_skill_input_" + str(uuid.uuid4())
+    with placeholder.expander("Abilities & Skills", expanded=True):
+        languages_options_key = "languages_multiselect_" ##+ str(uuid.uuid4())
+        custom_language_key = "custom_language_input_" ##+ str(uuid.uuid4())
+        skills_options_key = "skills_multiselect_" ##+ str(uuid.uuid4())
+        custom_skill_key = "custom_skill_input_" ##+ str(uuid.uuid4())
         
         languages_options = ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc", 
                              "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal", "Primordial", 
@@ -275,11 +292,11 @@ def input_equipment_and_treasures(placeholder, character_data):
     Returns:
     - dict: Dictionary containing character's equipment and treasures.
     """
-    with placeholder.expander("Equipment & Treasures"):
-        equipment_key = "equipment_textarea_" + str(uuid.uuid4())
-        treasure_key = "treasure_textarea_" + str(uuid.uuid4())
-        custom_equipment_key = "custom_equipment_input_" + str(uuid.uuid4())
-        custom_treasure_key = "custom_treasure_input_" + str(uuid.uuid4())
+    with placeholder.expander("Equipment & Treasures", expanded=True):
+        equipment_key = "equipment_textarea_" #+ str(uuid.uuid4())
+        treasure_key = "treasure_textarea_" #+ str(uuid.uuid4())
+        custom_equipment_key = "custom_equipment_input_" #+ str(uuid.uuid4())
+        custom_treasure_key = "custom_treasure_input_" #+ str(uuid.uuid4())
         
         equipment = st.text_area("Starting Equipment", character_data.get("equipment", ""), key=equipment_key)
         treasure = st.text_area("Treasure", character_data.get("treasure", ""), key=treasure_key)
@@ -305,11 +322,11 @@ def input_spellcasting(placeholder, character_data):
     - dict: Dictionary containing character's spellcasting information.
     """
     with placeholder.expander("Spellcasting"):
-        spellcasting_class_key = "spellcasting_class_select_" + str(uuid.uuid4())
-        custom_spellcasting_class_key = "custom_spellcasting_class_input_" + str(uuid.uuid4())
-        spellcasting_ability_key = "spellcasting_ability_input_" + str(uuid.uuid4())
-        spell_save_dc_key = "spell_save_dc_input_" + str(uuid.uuid4())
-        spell_attack_bonus_key = "spell_attack_bonus_input_" + str(uuid.uuid4())
+        spellcasting_class_key = "spellcasting_class_select_" #+ str(uuid.uuid4())
+        custom_spellcasting_class_key = "custom_spellcasting_class_input_" #+ str(uuid.uuid4())
+        spellcasting_ability_key = "spellcasting_ability_input_" #+ str(uuid.uuid4())
+        spell_save_dc_key = "spell_save_dc_input_" #+ str(uuid.uuid4())
+        spell_attack_bonus_key = "spell_attack_bonus_input_" #+ str(uuid.uuid4())
         
         spellcasting_class_options = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
                                       "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
