@@ -1,21 +1,21 @@
 import os
 import json
-import uuid
 import random
 import openai
 import streamlit as st
 import pandas as pd
 import requests
 from uuid import uuid4
+from fpdf import FPDF
 
 # Set OpenAI API Key
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 # Constants
 CURRENT_DIRECTORY = os.getcwd()
-IMAGE_DIRECTORY = f"{CURRENT_DIRECTORY}/images/"
-CHARACTER_SHEET_DIRECTORY = f"{CURRENT_DIRECTORY}/character_sheets/"
-DATA_DIRECTORY = f"{CURRENT_DIRECTORY}/data/"
+IMAGE_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "images")
+CHARACTER_SHEET_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "character_sheets")
+DATA_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "data")
 MAX_TOKENS = 1500
 
 # Ensure directories exist
@@ -28,10 +28,14 @@ def get_character_age():
     Generate a weighted random age for a character between 0 and 500 years old.
 
     Returns:
-    - int: The age of the character.
+        int: The age of the character.
     """
     age_weights = [0.05, 0.1, 0.45, 0.2, 0.1, 0.05, 0.05]
-    age_choices = [random.randint(1, 13), random.randint(13, 17), random.randint(18, 35), random.randint(36, 50), random.randint(50, 100), random.randint(101, 200), random.randint(201, 500)]
+    age_choices = [
+        random.randint(1, 13), random.randint(13, 17), random.randint(18, 35),
+        random.randint(36, 50), random.randint(50, 100), random.randint(101, 200),
+        random.randint(201, 500)
+    ]
     age = random.choices(age_choices, weights=age_weights)[0]
     return age
 
@@ -40,13 +44,11 @@ def get_character_data(character):
     Query the ChatGPT API to fill out missing character data based on provided data.
     
     Args:
-    - character (dict): Dictionary containing character attributes.
+        character (dict): Dictionary containing character attributes.
 
     Returns:
-    - str: Generated character description.
+        str: Generated character description.
     """
-    #prompt = f"Describe a D&D character with the following attributes.  Use propert JSON formatting and follow the source object's layout. Generate content for any empty fields.\n\n{json.dumps(character)}"
-    #print(f"Prompt: {prompt}")
     examples = [
        {
   "name": "Liora Moonshadow",
@@ -73,19 +75,21 @@ def get_character_data(character):
   "spellcasting_class": "Wizard",
   "spellcasting_ability": "Intelligence",
   "spell_save_dc": "16",
-  "spell_attack_bonus": "+8"
+  "spell_attack_bonus": "+8",
+  "portrait_prompt": "High Elf Wizard with silver hair and blue eyes. Wears enlightened robes and a silver circlet. Holds a Staff of the Arcane and a spellbook. Crystal orb necklace. Background shard from the Mirror of Fates.",
 } 
     ]
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
-        {"role": "system", "content": f"Here are some example character sheets:\n\n{examples}"},
-        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable."},
+        {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
+        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable. Also include a portrait_prompt value we can pass to dalle to create a character portrait."},
         {"role": "user", "content": f"{json.dumps(character)}"},
         {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank."},
     ]
     print(f"Messages: {messages}")
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=MAX_TOKENS)
-    #import ipdb; ipdb.set_trace()
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=messages, max_tokens=MAX_TOKENS
+    ) 
     result = response.choices[0].message.content
     print(f"Result: {result}")
     return result
@@ -125,74 +129,78 @@ def generate_portrait(prompt):
     filename = f"{uuid4()}.png"
     return save_dalle_image_to_disk(image_url, filename, 1)
 
-def generate_html_character_sheet(character, portrait_filenames):
+def create_pdf_character_sheet(character, portrait_filenames):
     """
-    Generate an HTML character sheet based on character data and save it locally.
+    Generate a PDF character sheet based on character data and save it locally.
 
     Args:
-    - character (dict): Dictionary containing character attributes.
-    - portrait_filenames (list): List of portrait filenames for the character.
+        character (dict): Dictionary containing character attributes.
+        portrait_filenames (list): List of portrait filenames for the character.
 
     Returns:
-    - str: The path to the saved HTML file.
+        str: The path to the saved PDF file.
     """
-    html_content = f"""
-    <h1>{character['name']}</h1>
-    <p><strong>Race:</strong> {character['race']}</p>
-    <!-- ... Other attributes ... -->
-    """
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=character['name'], ln=True)
+    for key, value in character.items():
+        if key != "name":
+            pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
     for filename in portrait_filenames:
-        html_content += f'<img src="{filename}" alt="Portrait of {character["name"]}">'
-    
-    filename = f"{CHARACTER_SHEET_DIRECTORY}{uuid4()}.html"
-    with open(filename, 'w') as file:
-       file.write(html_content)
-    return filename
+        pdf.image(filename, x=10, y=None, w=90)
+    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{uuid4()}.pdf")
+    pdf.output(pdf_file_path)
+    return pdf_file_path
 
 def input_basic_information(placeholder, character_data):
     """
     Gather basic information about the character from the user.
     
     Args:
-    - placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
-    - character_data (dict): Dictionary containing current character information.
+        placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
+        character_data (dict): Dictionary containing current character information.
 
     Returns:
-    - dict: Dictionary containing basic character information.
+        dict: Dictionary containing basic character information.
     """
     with placeholder.expander("Basic Information", expanded=True):
-        race_options = ["", "Human", "Elf", "Dwarf", "Orc", "Tiefling", "Gnome", "Halfling", "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Triton", "Custom"]
-        class_options = ["", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
-        alignment_options = ["", "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
-        background_options = ["", "Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin", "Custom"]
+        race_options = [
+            "", "Human", "Elf", "Dwarf", "Orc", "Tiefling", "Gnome", "Halfling", 
+            "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Triton", "Custom"
+        ]
+        class_options = [
+            "", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
+            "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
+        ]
+        alignment_options = [
+            "", "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", 
+            "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"
+        ]
+        background_options = [
+            "", "Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", 
+            "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", 
+            "Soldier", "Urchin", "Custom"
+        ]
         
-        race_key = "race_select_" #+ str(uuid.uuid4())  # Unique key for the race selectbox
-        class_key = "class_select_" #+ str(uuid.uuid4())  # Unique key for the class selectbox
-        alignment_key = "alignment_select_" #+ str(uuid.uuid4())  # Unique key for the alignment selectbox
-        background_key = "background_select_" #+ str(uuid.uuid4())  # Unique key for the background selectbox
-        age_key = "age_input_" #+ str(uuid.uuid4())  # Unique key for the age input
-        custom_race_key = "custom_race_input_" #+ str(uuid.uuid4())  # Unique key for the custom race input
-        custom_class_key = "custom_class_input_" #+ str(uuid.uuid4())  # Unique key for the custom class input
-        custom_background_key = "custom_background_input_" #+ str(uuid.uuid4())  # Unique key for the custom background input
-        
-        race = st.selectbox("Race", race_options, key=race_key)
+        race = st.selectbox("Race", race_options, key=f"race_select_{uuid4()}")
         if race == "Custom":
-            race = st.text_input("Custom Race", character_data.get("race", ""), key=custom_race_key)
+            race = st.text_input("Custom Race", character_data.get("race", ""), key=f"custom_race_input_{uuid4()}")
         
-        char_class = st.selectbox("Class", class_options, key=class_key)
+        char_class = st.selectbox("Class", class_options, key=f"class_select_{uuid4()}")
         if char_class == "Custom":
-            char_class = st.text_input("Custom Class", character_data.get("class", ""), key=custom_class_key)
+            char_class = st.text_input("Custom Class", character_data.get("class", ""), key=f"custom_class_input_{uuid4()}")
         
-        alignment = st.selectbox("Alignment", alignment_options, key=alignment_key)
-        background = st.selectbox("Background", background_options, key=background_key)
+        alignment = st.selectbox("Alignment", alignment_options, key=f"alignment_select_{uuid4()}")
+        background = st.selectbox("Background", background_options, key=f"background_select_{uuid4()}")
         if background == "Custom":
-            background = st.text_input("Custom Background", character_data.get("background", ""), key=custom_background_key)
+            background = st.text_input("Custom Background", character_data.get("background", ""), key=f"custom_background_input_{uuid4()}")
 
         age_num = character_data.get("age")
         if not age_num:
             age_num = get_character_age()
         age_num = int(age_num)
-        age = st.number_input("Age", min_value=1, max_value=500, step=1, value=age_num, key=age_key)
+        age = st.number_input("Age", min_value=1, max_value=500, step=1, value=age_num, key=f"age_input_{uuid4()}")
 
         return {
             "age": age,
@@ -214,19 +222,42 @@ def input_personality_and_backstory(placeholder, character_data):
     - dict: Dictionary containing character's personality and backstory.
     """
     with placeholder.expander("Personality & Backstory", expanded=True):
-        personality_traits_key = "personality_traits_textarea_" #+ str(uuid.uuid4())
-        ideals_key = "ideals_textarea_" #+ str(uuid.uuid4())
-        bonds_key = "bonds_textarea_" #+ str(uuid.uuid4())
-        flaws_key = "flaws_textarea_" #+ str(uuid.uuid4())
-        character_backstory_key = "character_backstory_textarea_" #+ str(uuid.uuid4())
-        allies_enemies_key = "allies_enemies_textarea_" #+ str(uuid.uuid4())
         
-        personality_traits = st.text_area("Personality Traits", character_data.get("personality_traits", ""), key=personality_traits_key)
-        ideals = st.text_area("Ideals", character_data.get("ideals", ""), key=ideals_key)
-        bonds = st.text_area("Bonds", character_data.get("bonds", ""), key=bonds_key)
-        flaws = st.text_area("Flaws", character_data.get("flaws", ""), key=flaws_key)
-        character_backstory = st.text_area("Character Backstory", character_data.get("character_backstory", ""), key=character_backstory_key)
-        allies_enemies = st.text_area("Allies & Enemies", character_data.get("allies_enemies", ""), key=allies_enemies_key)
+        personality_traits = st.text_area(
+            "Personality Traits", 
+            character_data.get("personality_traits", ""), 
+            key=f"personality_traits_textarea_{uuid4()}"
+        )
+        
+        ideals = st.text_area(
+            "Ideals", 
+            character_data.get("ideals", ""), 
+            key=f"ideals_textarea_{uuid4()}"
+        )
+        
+        bonds = st.text_area(
+            "Bonds", 
+            character_data.get("bonds", ""), 
+            key=f"bonds_textarea_{uuid4()}"
+        )
+        
+        flaws = st.text_area(
+            "Flaws", 
+            character_data.get("flaws", ""), 
+            key=f"flaws_textarea_{uuid4()}"
+        )
+        
+        character_backstory = st.text_area(
+            "Character Backstory", 
+            character_data.get("character_backstory", ""), 
+            key=f"character_backstory_textarea_{uuid4()}"
+        )
+        
+        allies_enemies = st.text_area(
+            "Allies & Enemies", 
+            character_data.get("allies_enemies", ""), 
+            key=f"allies_enemies_textarea_{uuid4()}"
+        )
 
         return {
             "personality_traits": personality_traits,
@@ -249,28 +280,50 @@ def input_abilities_and_skills(placeholder, character_data):
     - dict: Dictionary containing character's abilities and skills.
     """
     with placeholder.expander("Abilities & Skills", expanded=True):
-        languages_options_key = "languages_multiselect_" ##+ str(uuid.uuid4())
-        custom_language_key = "custom_language_input_" ##+ str(uuid.uuid4())
-        skills_options_key = "skills_multiselect_" ##+ str(uuid.uuid4())
-        custom_skill_key = "custom_skill_input_" ##+ str(uuid.uuid4())
         
-        languages_options = ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc", 
-                             "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal", "Primordial", 
-                             "Sylvan", "Undercommon", "Custom"]
+        languages_options = [
+            "", "Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling",
+            "Orc", "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal",
+            "Primordial", "Sylvan", "Undercommon", "Custom"
+        ]
         
-        languages = st.multiselect("Languages", languages_options, default=character_data.get("languages", []), key=languages_options_key)
+        languages = st.multiselect(
+            "Languages", 
+            languages_options, 
+            default=character_data.get("languages") or "", 
+            key=f"languages_multiselect_{uuid4()}"
+        )
+        
+        custom_language = ""
         if "Custom" in languages:
-            custom_language = st.text_input("Specify the custom language", character_data.get("custom_language", ""), key=custom_language_key)
+            custom_language = st.text_input(
+                "Specify the custom language", 
+                character_data.get("custom_language", ""), 
+                key=f"custom_language_input_{uuid4()}"
+            )
             languages.append(custom_language)
             languages.remove("Custom")
 
-        skills_options = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", 
-                          "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", 
-                          "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival", "Custom"]
+        skills_options = [
+            "Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", 
+            "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", 
+            "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival", "Custom"
+        ]
         
-        skills = st.multiselect("Skills", skills_options, default=character_data.get("skills", []), key=skills_options_key)
+        skills = st.multiselect(
+            "Skills", 
+            skills_options, 
+            default=character_data.get("skills", []), 
+            key=f"skills_multiselect_{uuid4()}"
+        )
+        
+        custom_skill = ""
         if "Custom" in skills:
-            custom_skill = st.text_input("Specify the custom skill", character_data.get("custom_skill", ""), key=custom_skill_key)
+            custom_skill = st.text_input(
+                "Specify the custom skill", 
+                character_data.get("custom_skill", ""), 
+                key=f"custom_skill_input_{uuid4()}"
+            )
             skills.append(custom_skill)
             skills.remove("Custom")
         
@@ -293,15 +346,30 @@ def input_equipment_and_treasures(placeholder, character_data):
     - dict: Dictionary containing character's equipment and treasures.
     """
     with placeholder.expander("Equipment & Treasures", expanded=True):
-        equipment_key = "equipment_textarea_" #+ str(uuid.uuid4())
-        treasure_key = "treasure_textarea_" #+ str(uuid.uuid4())
-        custom_equipment_key = "custom_equipment_input_" #+ str(uuid.uuid4())
-        custom_treasure_key = "custom_treasure_input_" #+ str(uuid.uuid4())
         
-        equipment = st.text_area("Starting Equipment", character_data.get("equipment", ""), key=equipment_key)
-        treasure = st.text_area("Treasure", character_data.get("treasure", ""), key=treasure_key)
-        custom_equipment = st.text_input("Custom Equipment (if any)", character_data.get("custom_equipment", ""), key=custom_equipment_key)
-        custom_treasure = st.text_input("Custom Treasure (if any)", character_data.get("custom_treasure", ""), key=custom_treasure_key)
+        equipment = st.text_area(
+            "Starting Equipment", 
+            character_data.get("equipment", ""), 
+            key=f"equipment_textarea_{uuid4()}"
+        )
+        
+        treasure = st.text_area(
+            "Treasure", 
+            character_data.get("treasure", ""), 
+            key=f"treasure_textarea_{uuid4()}"
+        )
+        
+        custom_equipment = st.text_input(
+            "Custom Equipment (if any)", 
+            character_data.get("custom_equipment", ""), 
+            key=f"custom_equipment_input_{uuid4()}"
+        )
+        
+        custom_treasure = st.text_input(
+            "Custom Treasure (if any)", 
+            character_data.get("custom_treasure", ""), 
+            key=f"custom_treasure_input_{uuid4()}"
+        )
 
         return {
             "equipment": equipment,
@@ -321,23 +389,45 @@ def input_spellcasting(placeholder, character_data):
     Returns:
     - dict: Dictionary containing character's spellcasting information.
     """
-    with placeholder.expander("Spellcasting"):
-        spellcasting_class_key = "spellcasting_class_select_" #+ str(uuid.uuid4())
-        custom_spellcasting_class_key = "custom_spellcasting_class_input_" #+ str(uuid.uuid4())
-        spellcasting_ability_key = "spellcasting_ability_input_" #+ str(uuid.uuid4())
-        spell_save_dc_key = "spell_save_dc_input_" #+ str(uuid.uuid4())
-        spell_attack_bonus_key = "spell_attack_bonus_input_" #+ str(uuid.uuid4())
+    with placeholder.expander("Spellcasting", expanded=True):
         
-        spellcasting_class_options = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
-                                      "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
+        spellcasting_class_options = [
+            "", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
+            "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
+        ]
         
-        spellcasting_class = st.selectbox("Spellcasting Class", spellcasting_class_options, key=spellcasting_class_key)
+        spellcasting_class = st.selectbox(
+            "Spellcasting Class", 
+            spellcasting_class_options, 
+            key=f"spellcasting_class_select_{uuid4()}"
+        )
+        
+        custom_spellcasting_class = ""
         if spellcasting_class == "Custom":
-            spellcasting_class = st.text_input("Specify the custom spellcasting class", character_data.get("custom_spellcasting_class", ""), key=custom_spellcasting_class_key)
+            custom_spellcasting_class = st.text_input(
+                "Specify the custom spellcasting class", 
+                character_data.get("custom_spellcasting_class", ""), 
+                key=f"custom_spellcasting_class_input_{uuid4()}"
+            )
+            spellcasting_class = custom_spellcasting_class
         
-        spellcasting_ability = st.text_input("Spellcasting Ability", character_data.get("spellcasting_ability", ""), key=spellcasting_ability_key)
-        spell_save_dc = st.text_input("Spell Save DC", character_data.get("spell_save_dc", ""), key=spell_save_dc_key)
-        spell_attack_bonus = st.text_input("Spell Attack Bonus", character_data.get("spell_attack_bonus", ""), key=spell_attack_bonus_key)
+        spellcasting_ability = st.text_input(
+            "Spellcasting Ability", 
+            character_data.get("spellcasting_ability", ""), 
+            key=f"spellcasting_ability_input_{uuid4()}"
+        )
+        
+        spell_save_dc = st.text_input(
+            "Spell Save DC", 
+            character_data.get("spell_save_dc", ""), 
+            key=f"spell_save_dc_input_{uuid4()}"
+        )
+        
+        spell_attack_bonus = st.text_input(
+            "Spell Attack Bonus", 
+            character_data.get("spell_attack_bonus", ""), 
+            key=f"spell_attack_bonus_input_{uuid4()}"
+        )
 
         return {
             "spellcasting_class": spellcasting_class,
@@ -355,26 +445,23 @@ def generate_and_display_character_sheet(character):
     """
     if st.button("Generate Character Sheet"):
         # Fetch filled out character data from the API
-        character["description"] = get_character_data(character)
+        generated_data = get_character_data(character)
+        character_data = transform_to_dict(generated_data)
+        character.update(character_data)
 
-        # Generate portrait prompts and portraits
-        num_portraits = st.slider("Number of Portraits", 1, 5)
-        portrait_filenames = []
-        for _ in range(num_portraits):
-            portrait_prompt = get_character_data({
-                key: character[key] for key in ["name", "race", "class", "background"]
-            })
-            portrait_filenames.append(generate_portrait(portrait_prompt))
-
+        # Generate a portrait using the provided "portrait_prompt"
+        portrait_prompt = character.get("portrait_prompt", "")
+        portrait_filename = generate_portrait(portrait_prompt)
+        
         # Generate HTML character sheet and save
-        html_filename = generate_html_character_sheet(character, portrait_filenames)
+        html_filename = generate_html_character_sheet(character, [portrait_filename])
 
         # Save character data as parquet
         df = pd.DataFrame([character])
         parquet_filename = f"{DATA_DIRECTORY}{uuid4()}.parquet"
         df.to_parquet(parquet_filename)
 
-        # Display the information to the user
+        # Display the saved locations to the user
         st.write(f"Character sheet saved at {html_filename} and data saved at {parquet_filename}")
         st.markdown(f"[Click here to view the character sheet]({html_filename})")
 
@@ -415,7 +502,6 @@ placeholders = {
 character_placeholder = st.empty()
 portrait_placeholder = st.empty()
 save_button_placeholder = st.empty()
-
 
 def main():
     """
@@ -460,34 +546,23 @@ def main():
         num_portraits = st.slider("Number of Portraits", 1, 5)
         portrait_filenames = []
         for _ in range(num_portraits):
-            portrait_prompt = get_character_data({
-                key: character[key] for key in ["name", "race", "class", "background"]
-            })
+            portrait_prompt = character.get("portrait_prompt", "")
+            
+            # Check if portrait_prompt is empty
+            if not portrait_prompt:
+                st.write("No portrait prompt provided. Skipping portrait generation.")
+                continue
+            
             portrait_filenames.append(generate_portrait(portrait_prompt))
         for filename in portrait_filenames:
             portrait_placeholder.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
 
-    # Check if user wants to save the character sheet and portraits
-    if save_button_placeholder.button("Save Character and Portraits"):        # Generate portrait prompts and portraits
-        num_portraits = st.slider("Number of Portraits", 1, 5)
-        portrait_filenames = []
-        for _ in range(num_portraits):
-            portrait_prompt = get_character_data({
-                key: character[key] for key in ["name", "race", "class", "background"]
-            })
-            portrait_filenames.append(generate_portrait(portrait_prompt))
-
-        # Generate HTML character sheet and save
-        html_filename = generate_html_character_sheet(character, portrait_filenames)
-
-        # Save character data as parquet
-        df = pd.DataFrame([character])
-        parquet_filename = f"{DATA_DIRECTORY}{uuid4()}.parquet"
-        df.to_parquet(parquet_filename)
+        # Create PDF character sheet and save
+        pdf_filename = create_pdf_character_sheet(character, portrait_filenames)
 
         # Display the saved locations to the user
-        st.write(f"Character sheet saved at {html_filename} and data saved at {parquet_filename}")
-        st.markdown(f"[Click here to view the character sheet]({html_filename})")
+        st.write(f"Character sheet saved as {pdf_filename}")
+        st.markdown(f"[Click here to download the character sheet]({pdf_filename})") 
 
 if __name__ == "__main__":
     main()
