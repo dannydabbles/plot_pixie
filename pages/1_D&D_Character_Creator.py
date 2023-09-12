@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 import openai
 import streamlit as st
 import pandas as pd
@@ -65,7 +66,7 @@ def get_character_data(character):
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
         {"role": "system", "content": f"Here are some example character sheets:\n\n{examples}"},
-        {"role": "system", "content": "The user will provide a JSON character sheet."},
+        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is consistent and the character is playable."},
         {"role": "user", "content": f"{json.dumps(character)}"},
         {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank."},
     ]
@@ -135,83 +136,114 @@ def generate_html_character_sheet(character, portrait_filenames):
        file.write(html_content)
     return filename
 
-def input_basic_information(character_data):
+def input_basic_information(placeholder, character_data):
     """
     Gather basic information about the character from the user.
     
     Args:
+    - placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
     - character_data (dict): Dictionary containing current character information.
 
     Returns:
     - dict: Dictionary containing basic character information.
     """
-    with st.expander("Basic Information"):
+    with placeholder.expander("Basic Information"):
         race_options = ["Human", "Elf", "Dwarf", "Orc", "Tiefling", "Gnome", "Halfling", "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Triton", "Custom"]
         class_options = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
         alignment_options = ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
         background_options = ["Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin", "Custom"]
         
-        race = st.selectbox("Race", race_options)
+        race_key = "race_select_" + str(uuid.uuid4())  # Unique key for the race selectbox
+        class_key = "class_select_" + str(uuid.uuid4())  # Unique key for the class selectbox
+        alignment_key = "alignment_select_" + str(uuid.uuid4())  # Unique key for the alignment selectbox
+        background_key = "background_select_" + str(uuid.uuid4())  # Unique key for the background selectbox
+        age_key = "age_input_" + str(uuid.uuid4())  # Unique key for the age input
+        custom_race_key = "custom_race_input_" + str(uuid.uuid4())  # Unique key for the custom race input
+        custom_class_key = "custom_class_input_" + str(uuid.uuid4())  # Unique key for the custom class input
+        custom_background_key = "custom_background_input_" + str(uuid.uuid4())  # Unique key for the custom background input
+        
+        race = st.selectbox("Race", race_options, key=race_key)
         if race == "Custom":
-            race = st.text_input("Custom Race", character_data.get("race", ""))
+            race = st.text_input("Custom Race", character_data.get("race", ""), key=custom_race_key)
         
-        char_class = st.selectbox("Class", class_options)
+        char_class = st.selectbox("Class", class_options, key=class_key)
         if char_class == "Custom":
-            char_class = st.text_input("Custom Class", character_data.get("class", ""))
+            char_class = st.text_input("Custom Class", character_data.get("class", ""), key=custom_class_key)
         
-        alignment = st.selectbox("Alignment", alignment_options)
-        background = st.selectbox("Background", background_options)
+        alignment = st.selectbox("Alignment", alignment_options, key=alignment_key)
+        background = st.selectbox("Background", background_options, key=background_key)
         if background == "Custom":
-            background = st.text_input("Custom Background", character_data.get("background", ""))
+            background = st.text_input("Custom Background", character_data.get("background", ""), key=custom_background_key)
         
+        age = st.number_input("Age", min_value=1, max_value=500, step=1, value=int(character_data.get("age", 25) or "25"), key=age_key)
+
         return {
-            "age": st.number_input("Age", min_value=1, max_value=500, step=1, value=int(character_data.get("age", 25) or "25")),
+            "age": age,
             "race": race,
             "class": char_class,
             "alignment": alignment,
             "background": background
         }
 
-        
-
-def input_personality_and_backstory(character_data):
+def input_personality_and_backstory(placeholder, character_data):
     """
     Gather information about the character's personality and backstory.
     
     Args:
+    - placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
     - character_data (dict): Dictionary containing current character information.
 
     Returns:
     - dict: Dictionary containing character's personality and backstory.
     """
-    with st.expander("Personality & Backstory"):
+    with placeholder.expander("Personality & Backstory"):
+        personality_traits_key = "personality_traits_textarea_" + str(uuid.uuid4())
+        ideals_key = "ideals_textarea_" + str(uuid.uuid4())
+        bonds_key = "bonds_textarea_" + str(uuid.uuid4())
+        flaws_key = "flaws_textarea_" + str(uuid.uuid4())
+        character_backstory_key = "character_backstory_textarea_" + str(uuid.uuid4())
+        allies_enemies_key = "allies_enemies_textarea_" + str(uuid.uuid4())
+        
+        personality_traits = st.text_area("Personality Traits", character_data.get("personality_traits", ""), key=personality_traits_key)
+        ideals = st.text_area("Ideals", character_data.get("ideals", ""), key=ideals_key)
+        bonds = st.text_area("Bonds", character_data.get("bonds", ""), key=bonds_key)
+        flaws = st.text_area("Flaws", character_data.get("flaws", ""), key=flaws_key)
+        character_backstory = st.text_area("Character Backstory", character_data.get("character_backstory", ""), key=character_backstory_key)
+        allies_enemies = st.text_area("Allies & Enemies", character_data.get("allies_enemies", ""), key=allies_enemies_key)
+
         return {
-            "personality_traits": st.text_area("Personality Traits", character_data.get("personality_traits", "")),
-            "ideals": st.text_area("Ideals", character_data.get("ideals", "")),
-            "bonds": st.text_area("Bonds", character_data.get("bonds", "")),
-            "flaws": st.text_area("Flaws", character_data.get("flaws", "")),
-            "character_backstory": st.text_area("Character Backstory", character_data.get("character_backstory", "")),
-            "allies_enemies": st.text_area("Allies & Enemies", character_data.get("allies_enemies", ""))
+            "personality_traits": personality_traits,
+            "ideals": ideals,
+            "bonds": bonds,
+            "flaws": flaws,
+            "character_backstory": character_backstory,
+            "allies_enemies": allies_enemies
         }
 
-def input_abilities_and_skills(character_data):
+def input_abilities_and_skills(placeholder, character_data):
     """
     Gather information about the character's abilities and skills.
     
     Args:
+    - placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
     - character_data (dict): Dictionary containing current character information.
 
     Returns:
     - dict: Dictionary containing character's abilities and skills.
     """
-    with st.expander("Abilities & Skills"):
+    with placeholder.expander("Abilities & Skills"):
+        languages_options_key = "languages_multiselect_" + str(uuid.uuid4())
+        custom_language_key = "custom_language_input_" + str(uuid.uuid4())
+        skills_options_key = "skills_multiselect_" + str(uuid.uuid4())
+        custom_skill_key = "custom_skill_input_" + str(uuid.uuid4())
+        
         languages_options = ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc", 
                              "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal", "Primordial", 
                              "Sylvan", "Undercommon", "Custom"]
         
-        languages = st.multiselect("Languages", languages_options, default=character_data.get("languages", []))
+        languages = st.multiselect("Languages", languages_options, default=character_data.get("languages", []), key=languages_options_key)
         if "Custom" in languages:
-            custom_language = st.text_input("Specify the custom language", character_data.get("custom_language", ""))
+            custom_language = st.text_input("Specify the custom language", character_data.get("custom_language", ""), key=custom_language_key)
             languages.append(custom_language)
             languages.remove("Custom")
 
@@ -219,9 +251,9 @@ def input_abilities_and_skills(character_data):
                           "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", 
                           "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival", "Custom"]
         
-        skills = st.multiselect("Skills", skills_options, default=character_data.get("skills", []))
+        skills = st.multiselect("Skills", skills_options, default=character_data.get("skills", []), key=skills_options_key)
         if "Custom" in skills:
-            custom_skill = st.text_input("Specify the custom skill", character_data.get("custom_skill", ""))
+            custom_skill = st.text_input("Specify the custom skill", character_data.get("custom_skill", ""), key=custom_skill_key)
             skills.append(custom_skill)
             skills.remove("Custom")
         
@@ -232,47 +264,69 @@ def input_abilities_and_skills(character_data):
             "custom_skill": custom_skill if "Custom" in character_data.get("skills", []) else ""
         }
 
-def input_equipment_and_treasures(character_data):
+def input_equipment_and_treasures(placeholder, character_data):
     """
     Gather information about the character's equipment and treasures.
     
     Args:
+    - placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
     - character_data (dict): Dictionary containing current character information.
 
     Returns:
     - dict: Dictionary containing character's equipment and treasures.
     """
-    with st.expander("Equipment & Treasures"):
+    with placeholder.expander("Equipment & Treasures"):
+        equipment_key = "equipment_textarea_" + str(uuid.uuid4())
+        treasure_key = "treasure_textarea_" + str(uuid.uuid4())
+        custom_equipment_key = "custom_equipment_input_" + str(uuid.uuid4())
+        custom_treasure_key = "custom_treasure_input_" + str(uuid.uuid4())
+        
+        equipment = st.text_area("Starting Equipment", character_data.get("equipment", ""), key=equipment_key)
+        treasure = st.text_area("Treasure", character_data.get("treasure", ""), key=treasure_key)
+        custom_equipment = st.text_input("Custom Equipment (if any)", character_data.get("custom_equipment", ""), key=custom_equipment_key)
+        custom_treasure = st.text_input("Custom Treasure (if any)", character_data.get("custom_treasure", ""), key=custom_treasure_key)
+
         return {
-            "equipment": st.text_area("Starting Equipment", character_data.get("equipment", "")),
-            "treasure": st.text_area("Treasure", character_data.get("treasure", "")),
-            "custom_equipment": st.text_input("Custom Equipment (if any)", character_data.get("custom_equipment", "")),
-            "custom_treasure": st.text_input("Custom Treasure (if any)", character_data.get("custom_treasure", ""))
+            "equipment": equipment,
+            "treasure": treasure,
+            "custom_equipment": custom_equipment,
+            "custom_treasure": custom_treasure
         }
 
-def input_spellcasting(character_data):
+def input_spellcasting(placeholder, character_data):
     """
     Gather information about the character's spellcasting abilities.
     
     Args:
+    - placeholder (streamlit.delta_generator.DeltaGenerator): Streamlit container for the section.
     - character_data (dict): Dictionary containing current character information.
 
     Returns:
     - dict: Dictionary containing character's spellcasting information.
     """
-    with st.expander("Spellcasting"):
+    with placeholder.expander("Spellcasting"):
+        spellcasting_class_key = "spellcasting_class_select_" + str(uuid.uuid4())
+        custom_spellcasting_class_key = "custom_spellcasting_class_input_" + str(uuid.uuid4())
+        spellcasting_ability_key = "spellcasting_ability_input_" + str(uuid.uuid4())
+        spell_save_dc_key = "spell_save_dc_input_" + str(uuid.uuid4())
+        spell_attack_bonus_key = "spell_attack_bonus_input_" + str(uuid.uuid4())
+        
         spellcasting_class_options = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
                                       "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"]
         
-        spellcasting_class = st.selectbox("Spellcasting Class", spellcasting_class_options, index=spellcasting_class_options.index(character_data.get("spellcasting_class", "Barbarian")))
+        spellcasting_class = st.selectbox("Spellcasting Class", spellcasting_class_options, key=spellcasting_class_key)
         if spellcasting_class == "Custom":
-            spellcasting_class = st.text_input("Specify the custom spellcasting class", character_data.get("custom_spellcasting_class", ""))
+            spellcasting_class = st.text_input("Specify the custom spellcasting class", character_data.get("custom_spellcasting_class", ""), key=custom_spellcasting_class_key)
         
+        spellcasting_ability = st.text_input("Spellcasting Ability", character_data.get("spellcasting_ability", ""), key=spellcasting_ability_key)
+        spell_save_dc = st.text_input("Spell Save DC", character_data.get("spell_save_dc", ""), key=spell_save_dc_key)
+        spell_attack_bonus = st.text_input("Spell Attack Bonus", character_data.get("spell_attack_bonus", ""), key=spell_attack_bonus_key)
+
         return {
             "spellcasting_class": spellcasting_class,
-            "spellcasting_ability": st.text_input("Spellcasting Ability", character_data.get("spellcasting_ability", "")),
-            "spell_save_dc": st.text_input("Spell Save DC", character_data.get("spell_save_dc", "")),
-            "spell_attack_bonus": st.text_input("Spell Attack Bonus", character_data.get("spell_attack_bonus", ""))
+            "spellcasting_ability": spellcasting_ability,
+            "spell_save_dc": spell_save_dc,
+            "spell_attack_bonus": spell_attack_bonus
         }
 
 def generate_and_display_character_sheet(character):
@@ -326,29 +380,47 @@ def transform_to_dict(data_str):
     data_dict = json.loads(data_str)  # Convert the string to a dictionary
     return data_dict
 
+# Set the page configuration at the very top of the script
+st.set_page_config(page_title="D&D Character Creator", page_icon="📈")
+
+# Placeholders for all user inputs
+placeholders = {
+    "name": st.empty(),
+    "description": st.empty(),
+    "basic_information": st.empty(),
+    "personality_and_backstory": st.empty(),
+    "abilities_and_skills": st.empty(),
+    "equipment_and_treasures": st.empty(),
+    "spellcasting": st.empty()
+}
+
+# Placeholders for the generated sections
+character_placeholder = st.empty()
+portrait_placeholder = st.empty()
+save_button_placeholder = st.empty()
+
+
 def main():
     """
     Main function for the Streamlit app.
     """
-    st.set_page_config(page_title="D&D Character Creator", page_icon="📈")
     st.markdown("# D&D Character Creator")
     
     character = {}
 
-    # Initialize user input dictionary
+    # Initial user input using placeholders
     user_input_character = {
-        "name": st.text_input("Character Name", ""),
-        "description": st.text_area("Description", "")
+        "name": placeholders["name"].text_input("Character Name", ""),
+        "description": placeholders["description"].text_area("Description", "")
     }
 
-    # Use the user's input for the other sections
-    user_input_character.update(input_basic_information(user_input_character))
-    user_input_character.update(input_personality_and_backstory(user_input_character))
-    user_input_character.update(input_abilities_and_skills(user_input_character))
-    user_input_character.update(input_equipment_and_treasures(user_input_character))
-    user_input_character.update(input_spellcasting(user_input_character))
-
-    #import ipdb; ipdb.set_trace()
+    # Collect user's input for the other sections
+    user_input_character.update(input_basic_information(placeholders["basic_information"], user_input_character))
+    user_input_character.update(input_personality_and_backstory(placeholders["personality_and_backstory"], user_input_character))
+    user_input_character.update(input_abilities_and_skills(placeholders["abilities_and_skills"], user_input_character))
+    user_input_character.update(input_equipment_and_treasures(placeholders["equipment_and_treasures"], user_input_character))
+    user_input_character.update(input_spellcasting(placeholders["spellcasting"], user_input_character))
+    
     character.update(user_input_character)
 
     # Check if user wants to generate a character sheet
@@ -358,19 +430,28 @@ def main():
         character_data = transform_to_dict(generated_data)
         character.update(character_data)
 
-        print(f"Character: {character}")
-
-        # Update all the user input fields with the generated data
-        for key in character:
-            if key in user_input_character:
-                user_input_character[key] = character[key]
-
-        # Refresh the Streamlit app to display the updated character data
-        st.experimental_rerun()
+        # Update placeholders with generated data
+        placeholders["name"].text_input("Character Name", character['name'])
+        placeholders["description"].text_area("Description", character['description'])
+        input_basic_information(placeholders["basic_information"], character)
+        input_personality_and_backstory(placeholders["personality_and_backstory"], character)
+        input_abilities_and_skills(placeholders["abilities_and_skills"], character)
+        input_equipment_and_treasures(placeholders["equipment_and_treasures"], character)
+        input_spellcasting(placeholders["spellcasting"], character)
+        
+        # Generate portrait prompts and portraits
+        num_portraits = st.slider("Number of Portraits", 1, 5)
+        portrait_filenames = []
+        for _ in range(num_portraits):
+            portrait_prompt = get_character_data({
+                key: character[key] for key in ["name", "race", "class", "background"]
+            })
+            portrait_filenames.append(generate_portrait(portrait_prompt))
+        for filename in portrait_filenames:
+            portrait_placeholder.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
 
     # Check if user wants to save the character sheet and portraits
-    if st.button("Save Character and Portraits"):
-        # Generate portrait prompts and portraits
+    if save_button_placeholder.button("Save Character and Portraits"):        # Generate portrait prompts and portraits
         num_portraits = st.slider("Number of Portraits", 1, 5)
         portrait_filenames = []
         for _ in range(num_portraits):
