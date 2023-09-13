@@ -67,22 +67,6 @@ spellcasting_class_options = [
 ]
 
 
-def get_character_age():
-    """
-    Generate a weighted random age for a character between 0 and 500 years old.
-
-    Returns:
-        int: The age of the character.
-    """
-    age_weights = [0.05, 0.1, 0.45, 0.2, 0.1, 0.05, 0.05]
-    age_choices = [
-        random.randint(1, 13), random.randint(13, 17), random.randint(18, 35),
-        random.randint(36, 50), random.randint(50, 100), random.randint(101, 200),
-        random.randint(201, 500)
-    ]
-    age = random.choices(age_choices, weights=age_weights)[0]
-    return age
-
 def get_character_data(character):
     """
     Query the ChatGPT API to fill out missing character data based on provided data.
@@ -277,7 +261,7 @@ def default_character():
         "class": "",
         "alignment": "",
         "background": "",
-        "age": get_character_age(),
+        "age": "",
         "personality_traits": "",
         "ideals": "",
         "bonds": "",
@@ -336,7 +320,7 @@ def build_form(character):
         character['class'] = st.text_input("Class", character['class'])
         character['alignment'] = st.text_input("Alignment", character['alignment'])
         character['background'] = st.text_input("Background", character['background'])
-        character['age'] = st.number_input("Age", min_value=1, max_value=500, value=int(character['age']))
+        character['age'] = st.text_input("Age", value=character['age'])
 
     with st.expander("Character Traits"):
         character['appearance'] = st.text_area("Appearance", character['appearance'])
