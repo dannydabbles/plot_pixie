@@ -10,6 +10,8 @@ from fpdf import FPDF
 
 # Set OpenAI API Key
 openai.api_key = os.environ.get('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    raise ValueError("Missing OPENAI_API_KEY")
 
 # Constants
 CURRENT_DIRECTORY = os.getcwd()
@@ -304,7 +306,8 @@ def main():
     save_button_placeholder = st.empty()
 
     # Generate portrait prompts and portrait
-    num_portraits = st.slider("Number of Portraits", 1, 5)
+    #num_portraits = st.slider("Number of Portraits", 1, 5)
+    num_portraits = 1
     portrait_filenames = []
     for _ in range(num_portraits):
         portrait_prompt = character.get("portrait_prompt", "")
