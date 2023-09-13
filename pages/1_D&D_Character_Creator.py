@@ -341,6 +341,9 @@ def build_form(character):
         character['spellcasting_ability'] = st.text_input("Spellcasting Ability", character['spellcasting_ability'])
         character['spell_save_dc'] = st.text_input("Spell Save DC", character['spell_save_dc'])
         character['spell_attack_bonus'] = st.text_input("Spell Attack Bonus", character['spell_attack_bonus'])
+    if 'portrait_filenames' in st.session_state and st.session_state.portrait_filenames:
+        for filename in st.session_state.portrait_filenames:
+            st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
 
 def main():
     """
@@ -355,27 +358,10 @@ def main():
 
     build_form(character)
 
-    portrait_placeholder = st.empty()
-    save_button_placeholder = st.empty()
-
-    # Generate portrait prompts and portrait
-    #num_portraits = st.slider("Number of Portraits", 1, 5)
-    num_portraits = 1
-    portrait_filenames = []
-    for _ in range(num_portraits):
-        portrait_prompt = character.get("portrait_prompt", "")
-
-        # Check if portrait_prompt is empty
-        if not portrait_prompt:
-            #st.write("No portrait prompt provided. Skipping portrait generation.")
-            continue
-
-        portrait_filenames.append(generate_portrait(portrait_prompt, character['name']))
-
-    for filename in portrait_filenames:
-        portrait_placeholder = st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
-
     if st.button("Generate Character Sheet"):
+        portrait_placeholder = st.empty()
+        save_button_placeholder = st.empty()
+
         with st.spinner('Generating character data...'):
             try:
                 # Get character data from API
@@ -388,8 +374,24 @@ def main():
 
         with st.spinner('Generating PDF character sheet...'):
             try:
+                st.session_state.portrait_filenames = []
+
+                # Generate portrait prompts and portrait
+                #num_portraits = st.slider("Number of Portraits", 1, 5)
+                num_portraits = 1
+                for _ in range(num_portraits):
+                    portrait_prompt = character.get("portrait_prompt", "")
+
+                    # Check if portrait_prompt is empty
+                    if not portrait_prompt:
+                        #st.write("No portrait prompt provided. Skipping portrait generation.")
+                        continue
+
+                    with st.spinner('Generating character portrait...'):
+                        st.session_state.portrait_filenames.append(generate_portrait(portrait_prompt, character['name']))
+
                 # Create PDF character sheet and save
-                pdf_filename = create_pdf_character_sheet(character, portrait_filenames)
+                pdf_filename = create_pdf_character_sheet(character, st.session_state.portrait_filenames)
 
                 # Save the path to the PDF in the session state
                 st.session_state.pdf_path = pdf_filename
