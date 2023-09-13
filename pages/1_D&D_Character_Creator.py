@@ -111,8 +111,8 @@ def get_character_data(character):
         "flaws": "I often overlook immediate dangers, being too engrossed in my studies or thoughts.",
         "character_backstory": "Liora hails from the ancient city of Ellyndor. Trained in the Grand Library, she became obsessed with a lost spellbook of immense power. Now she travels the land in search of this artifact, using her magic to uncover hidden truths.",
         "allies_enemies": "Allied with the Keepers of the Grand Library. Beware of the Dark Enchantress, who also seeks the spellbook.",
-        "languages": ["Common", "Elvish", "Draconic", "Sylvan"],
-        "skills": ["Arcana", "History"],
+        "languages": "Common, Elvish, Draconic, Sylvan",
+        "skills": "Arcana, History",
         "custom_language": "Ancient High Elvish",
         "custom_skill": "Magical artifact identification",
         "equipment": "Staff of the Arcane, robes of the enlightened, spellbook, and a pouch of spell components",
@@ -284,9 +284,9 @@ def default_character():
         "flaws": "",
         "character_backstory": "",
         "allies_enemies": "",
-        "languages": [],
+        "languages": "",
         "custom_language": "",
-        "skills": [],
+        "skills": "",
         "custom_skill": "",
         "equipment": "",
         "treasure": "",
@@ -334,8 +334,8 @@ def build_form(character):
         character['orientation'] = st.text_input("Orientation", character.get('orientation', ''))
         character['race'] = st.text_input("Race", character['race'])
         character['class'] = st.text_input("Class", character['class'])
-        character['alignment'] = st.selectbox("Alignment", alignment_options, index=alignment_options.index(character['alignment']) if character['alignment'] in alignment_options else 0)
-        character['background'] = st.selectbox("Background", background_options, index=background_options.index(character['background']) if character['background'] in background_options else 0)
+        character['alignment'] = st.text_input("Alignment", character['alignment'])
+        character['background'] = st.text_input("Background", character['background'])
         character['age'] = st.number_input("Age", min_value=1, max_value=500, value=int(character['age']))
 
     with st.expander("Character Traits"):
@@ -348,11 +348,8 @@ def build_form(character):
         character['allies_enemies'] = st.text_area("Allies & Enemies", character['allies_enemies'])
 
     with st.expander("Skills and Languages"):
-        valid_skills = list(set(character['skills']) & set(skills_options))
-        character['skills'] = st.multiselect("Skills", skills_options, valid_skills)
-
-        valid_languages = list(set(character['languages']) & set(languages_options))
-        character['languages'] = st.multiselect("Languages", languages_options, valid_languages)
+        character['skills'] = st.text_input("Skills", character['skills'])
+        character['languages'] = st.text_input("Languages", character['languages'])
 
     with st.expander("Equipment and Treasure"):
         character['equipment'] = st.text_area("Equipment", character['equipment'])
