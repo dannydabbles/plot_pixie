@@ -357,6 +357,7 @@ def main():
     Main function for the Streamlit app.
     """
     st.markdown("# D&D Character Creator")
+    st.markdown("#### (Any empty fields will be filled in)")
   
     if 'character' not in st.session_state or not st.session_state.character:
         st.session_state.character = default_character()
