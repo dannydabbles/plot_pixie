@@ -94,34 +94,35 @@ def get_character_data(character):
         str: Generated character description.
     """
     examples = [
-       {
-  "name": "Liora Moonshadow",
-  "description": "A graceful elf with silver hair and piercing blue eyes, adept in the arcane arts and carrying the wisdom of the ages.",
-  "age": 124,
-  "race": "High Elf",
-  "class": "Wizard",
-  "alignment": "Neutral",
-  "background": "Sage",
-  "personality_traits": "I am lost in thought, often oblivious to my surroundings. I'm fascinated by ancient artifacts and the secrets they hold.",
-  "ideals": "Knowledge. The pursuit of knowledge is the greatest endeavor.",
-  "bonds": "I am on a quest to find an ancient spellbook said to contain the secrets of the universe.",
-  "flaws": "I often overlook immediate dangers, being too engrossed in my studies or thoughts.",
-  "character_backstory": "Liora hails from the ancient city of Ellyndor. Trained in the Grand Library, she became obsessed with a lost spellbook of immense power. Now she travels the land in search of this artifact, using her magic to uncover hidden truths.",
-  "allies_enemies": "Allied with the Keepers of the Grand Library. Beware of the Dark Enchantress, who also seeks the spellbook.",
-  "languages": ["Common", "Elvish", "Draconic", "Sylvan"],
-  "skills": ["Arcana", "History"],
-  "custom_language": "Ancient High Elvish",
-  "custom_skill": "Magical artifact identification",
-  "equipment": "Staff of the Arcane, robes of the enlightened, spellbook, and a pouch of spell components",
-  "treasure": "A crystal orb said to have been touched by the first wizards",
-  "custom_equipment": "Silver circlet that enhances focus",
-  "custom_treasure": "A shard from the Mirror of Fates",
-  "spellcasting_class": "Wizard",
-  "spellcasting_ability": "Intelligence",
-  "spell_save_dc": "16",
-  "spell_attack_bonus": "+8",
-  "portrait_prompt": "High Elf Wizard with silver hair and blue eyes. Wears enlightened robes and a silver circlet. Holds a Staff of the Arcane and a spellbook. Crystal orb necklace. Background shard from the Mirror of Fates.",
-} 
+    {
+        "name": "Liora Moonshadow",
+        "description": "A graceful elf with silver hair and piercing blue eyes, adept in the arcane arts and carrying the wisdom of the ages.",
+        "appearance": "Liora is a tall and slender High Elf with long, flowing silver hair that cascades down her back. Her piercing blue eyes seem to hold the mysteries of the ages, often lost in deep thought. Her skin is a pale shade, almost luminescent under certain lights. She typically wears her enlightened robes, and a silver circlet can always be seen resting on her forehead. Around her neck, she wears a necklace with a crystal orb that is said to have been touched by the first wizards.",
+        "age": 124,
+        "race": "High Elf",
+        "class": "Wizard",
+        "alignment": "Neutral",
+        "background": "Sage",
+        "personality_traits": "I am lost in thought, often oblivious to my surroundings. I'm fascinated by ancient artifacts and the secrets they hold.",
+        "ideals": "Knowledge. The pursuit of knowledge is the greatest endeavor.",
+        "bonds": "I am on a quest to find an ancient spellbook said to contain the secrets of the universe.",
+        "flaws": "I often overlook immediate dangers, being too engrossed in my studies or thoughts.",
+        "character_backstory": "Liora hails from the ancient city of Ellyndor. Trained in the Grand Library, she became obsessed with a lost spellbook of immense power. Now she travels the land in search of this artifact, using her magic to uncover hidden truths.",
+        "allies_enemies": "Allied with the Keepers of the Grand Library. Beware of the Dark Enchantress, who also seeks the spellbook.",
+        "languages": ["Common", "Elvish", "Draconic", "Sylvan"],
+        "skills": ["Arcana", "History"],
+        "custom_language": "Ancient High Elvish",
+        "custom_skill": "Magical artifact identification",
+        "equipment": "Staff of the Arcane, robes of the enlightened, spellbook, and a pouch of spell components",
+        "treasure": "A crystal orb said to have been touched by the first wizards",
+        "custom_equipment": "Silver circlet that enhances focus",
+        "custom_treasure": "A shard from the Mirror of Fates",
+        "spellcasting_class": "Wizard",
+        "spellcasting_ability": "Intelligence",
+        "spell_save_dc": "16",
+        "spell_attack_bonus": "+8",
+        "portrait_prompt": "A tall and slender High Elf named Liora Moonshadow with long, flowing silver hair and piercing blue eyes. She wears enlightened robes and a silver circlet on her forehead. Around her neck, she has a crystal orb necklace. In her hand, she holds a Staff of the Arcane and carries a spellbook."
+    }
     ]
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
@@ -269,6 +270,7 @@ def default_character():
     default_character = {
         "name": "",
         "description": "",
+        "appearance": "",
         "race": "",
         "class": "",
         "alignment": "",
@@ -312,6 +314,7 @@ def build_form(character):
         character['age'] = st.number_input("Age", min_value=1, max_value=500, value=int(character['age']))
 
     with st.expander("Character Traits"):
+        character['appearance'] = st.text_area("Appearance", character['appearance'])
         character['personality_traits'] = st.text_area("Personality Traits", character['personality_traits'])
         character['ideals'] = st.text_area("Ideals", character['ideals'])
         character['bonds'] = st.text_area("Bonds", character['bonds'])
