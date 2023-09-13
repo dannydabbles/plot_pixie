@@ -9,7 +9,10 @@ from uuid import uuid4
 from fpdf import FPDF
 
 # Set OpenAI API Key
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+#openai.api_key = os.environ.get('OPENAI_API_KEY')
+
+# Set OpenAI API Key
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 if not OPENAI_API_KEY:
     raise ValueError("Missing OPENAI_API_KEY")
 
@@ -156,7 +159,9 @@ def save_dalle_image_to_disk(image_url, character_name, portrait_num):
     response = requests.get(image_url)
     response.raise_for_status()  # Raise an error for failed requests
     
-    filename = f"{IMAGE_DIRECTORY}{character_name}_portrait_{portrait_num}.png"
+    # Use character name in filename
+    filename_base = character_name.replace(" ", "_") if character_name else "default_character"
+    filename = f"{IMAGE_DIRECTORY}/{filename_base}_portrait_{portrait_num}.png"
     with open(filename, "wb") as file:
         file.write(response.content)
     return filename
@@ -196,7 +201,10 @@ def create_pdf_character_sheet(character, portrait_filenames):
             pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
     for filename in portrait_filenames:
         pdf.image(filename, x=10, y=None, w=90)
-    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f".pdf")
+    
+    # Use character name in filename
+    filename_base = character['name'].replace(" ", "_") if character['name'] else "default_character"
+    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{filename_base}.pdf")
     pdf.output(pdf_file_path)
     return pdf_file_path
 
@@ -259,7 +267,7 @@ def build_form(character):
         character['class'] = st.selectbox("Class", class_options, index=class_options.index(character['class']) if character['class'] in class_options else 0)
         character['alignment'] = st.selectbox("Alignment", alignment_options, index=alignment_options.index(character['alignment']) if character['alignment'] in alignment_options else 0)
         character['background'] = st.selectbox("Background", background_options, index=background_options.index(character['background']) if character['background'] in background_options else 0)
-        character['age'] = st.number_input("Age", min_value=1, max_value=500, value=character['age'])
+        character['age'] = st.number_input("Age", min_value=1, max_value=500, value=int(character['age']))
 
     with st.expander("Character Traits"):
         character['personality_traits'] = st.text_area("Personality Traits", character['personality_traits'])
@@ -323,21 +331,25 @@ def main():
         portrait_placeholder = st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
 
     if st.button("Generate Character Sheet"):
-        #import ipdb; ipdb.set_trace()
-        generated_data = get_character_data(character)
-        #import ipdb; ipdb.set_trace()
-        for key, value in generated_data.items():
-            character[key] = value
+        with st.spinner('Generating character data...'):
+            try:
+                # Get character data from API
+                generated_data = get_character_data(character)
+                for key, value in generated_data.items():
+                    character[key] = value
+            except Exception as e:
+                st.error(f"Error generating character data: {str(e)}")
+                return
 
-        st.session_state.character = character
-
-        # Create PDF character sheet and save
-        pdf_filename = create_pdf_character_sheet(character, portrait_filenames)
-
-        # Display the saved locations to the user
-        st.write(f"Character sheet saved as {pdf_filename}")
-        st.markdown(f"[Click here to download the character sheet]({pdf_filename})")
-
+        with st.spinner('Generating PDF character sheet...'):
+            try:
+                # Create PDF character sheet and save
+                pdf_filename = create_pdf_character_sheet(character, portrait_filenames)
+                st.write(f"Character sheet saved as {pdf_filename}")
+                st.markdown(f"[Click here to download the character sheet]({pdf_filename})")
+            except Exception as e:
+                st.error(f"Error generating PDF: {str(e)}")
+                return
         st.experimental_rerun()
 
 if __name__ == "__main__":
