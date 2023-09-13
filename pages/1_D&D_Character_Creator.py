@@ -129,7 +129,7 @@ def get_character_data(character):
         {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
         {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable. Also include a portrait_prompt value we can pass to dalle to create a character portrait."},
         {"role": "user", "content": f"{json.dumps(character)}"},
-        {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank."},
+        {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank. Make sure facts about the character are consistent across the generated character sheet JSON."},
     ]
     print(f"Messages: {messages}")
     response = openai.ChatCompletion.create(
@@ -248,18 +248,15 @@ def default_character():
 # Set the page configuration at the very top of the script
 st.set_page_config(page_title="D&D Character Creator", page_icon="📈")
 
-portrait_placeholder = None
-save_button_placeholder = None
-
 def build_form(character):
     character['name'] = st.text_input("Character Name", character['name'])
     character['description'] = st.text_area("Description", character['description'])
 
     with st.expander("Basic Info"):
-        character['race'] = st.text_input("Race", character['race'])
-        character['class'] = st.text_input("Class", character['class'])
-        character['alignment'] = st.text_input("Alignment", character['alignment'])
-        character['background'] = st.text_input("Background", character['background'])
+        character['race'] = st.selectbox("Race", race_options, index=race_options.index(character['race']) if character['race'] in race_options else 0)
+        character['class'] = st.selectbox("Class", class_options, index=class_options.index(character['class']) if character['class'] in class_options else 0)
+        character['alignment'] = st.selectbox("Alignment", alignment_options, index=alignment_options.index(character['alignment']) if character['alignment'] in alignment_options else 0)
+        character['background'] = st.selectbox("Background", background_options, index=background_options.index(character['background']) if character['background'] in background_options else 0)
         character['age'] = st.number_input("Age", min_value=1, max_value=500, value=character['age'])
 
     with st.expander("Character Traits"):
@@ -271,10 +268,11 @@ def build_form(character):
         character['allies_enemies'] = st.text_area("Allies & Enemies", character['allies_enemies'])
 
     with st.expander("Skills and Languages"):
-        character['skills'] = st.multiselect("Skills", ['Skill 1', 'Skill 2', 'Skill 3'], character['skills'])  # Placeholder skills
-        character['custom_skill'] = st.text_input("Custom Skill", character['custom_skill'])
-        character['languages'] = st.multiselect("Languages", ['Common', 'Elvish', 'Dwarvish'], character['languages'])  # Placeholder languages
-        character['custom_language'] = st.text_input("Custom Language", character['custom_language'])
+        valid_skills = list(set(character['skills']) & set(skills_options))
+        character['skills'] = st.multiselect("Skills", skills_options, valid_skills)
+
+        valid_languages = list(set(character['languages']) & set(languages_options))
+        character['languages'] = st.multiselect("Languages", languages_options, valid_languages)
 
     with st.expander("Equipment and Treasure"):
         character['equipment'] = st.text_area("Equipment", character['equipment'])
@@ -302,6 +300,25 @@ def main():
 
     build_form(character)
 
+    portrait_placeholder = st.empty()
+    save_button_placeholder = st.empty()
+
+    # Generate portrait prompts and portrait
+    num_portraits = st.slider("Number of Portraits", 1, 5)
+    portrait_filenames = []
+    for _ in range(num_portraits):
+        portrait_prompt = character.get("portrait_prompt", "")
+
+        # Check if portrait_prompt is empty
+        if not portrait_prompt:
+            #st.write("No portrait prompt provided. Skipping portrait generation.")
+            continue
+
+        portrait_filenames.append(generate_portrait(portrait_prompt))
+
+    for filename in portrait_filenames:
+        portrait_placeholder = st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
+
     if st.button("Generate Character Sheet"):
         #import ipdb; ipdb.set_trace()
         generated_data = get_character_data(character)
@@ -310,24 +327,6 @@ def main():
             character[key] = value
 
         st.session_state.character = character
-        # Generate portrait prompts and portrait
-        num_portraits = st.slider("Number of Portraits", 1, 5)
-        portrait_filenames = []
-        for _ in range(num_portraits):
-            portrait_prompt = character.get("portrait_prompt", "")
-            
-            # Check if portrait_prompt is empty
-            if not portrait_prompt:
-                st.write("No portrait prompt provided. Skipping portrait generation.")
-                continue
-            
-            portrait_filenames.append(generate_portrait(portrait_prompt))
-
-        portrait_placeholder = st.empty()
-        save_button_placeholder = st.empty()
-
-        for filename in portrait_filenames:
-            portrait_placeholder.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
 
         # Create PDF character sheet and save
         pdf_filename = create_pdf_character_sheet(character, portrait_filenames)
