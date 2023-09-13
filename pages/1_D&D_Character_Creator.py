@@ -99,6 +99,8 @@ def get_character_data(character):
         "description": "A graceful elf with silver hair and piercing blue eyes, adept in the arcane arts and carrying the wisdom of the ages.",
         "appearance": "Liora is a tall and slender High Elf with long, flowing silver hair that cascades down her back. Her piercing blue eyes seem to hold the mysteries of the ages, often lost in deep thought. Her skin is a pale shade, almost luminescent under certain lights. She typically wears her enlightened robes, and a silver circlet can always be seen resting on her forehead. Around her neck, she wears a necklace with a crystal orb that is said to have been touched by the first wizards.",
         "age": 124,
+        "pronouns": "She/Her",
+        "orientation": "Bisexual",
         "race": "High Elf",
         "class": "Wizard",
         "alignment": "Neutral",
@@ -211,7 +213,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
 
     # Character Basic Info
     add_section_header("Character Details")
-    basic_info_keys = ['race', 'class', 'alignment', 'background', 'age']
+    basic_info_keys = ['pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age']
     for key in basic_info_keys:
         add_key_value(key, character[key])
 
@@ -246,7 +248,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
     pdf.set_font("Arial", 'I', 8)
     pdf.cell(0, 10, 'Page ' + str(pdf.page_no()) + '/{nb}', 0, 0, 'C')
 
-    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}.pdf")
+    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}_{uuid4()}.pdf")
     pdf.output(pdf_file_path)
 
     return pdf_file_path
@@ -303,12 +305,35 @@ def default_character():
 st.set_page_config(page_title="D&D Character Creator", page_icon="📈")
 
 def build_form(character):
+    """
+    Constructs the interactive form in the Streamlit application to gather and display 
+    character details for a D&D character.
+
+    The form consists of multiple sections, including:
+    - Basic Information: Character's name, description, race, class, alignment, background, age, pronouns, and orientation.
+    - Character Traits: Appearance, personality traits, ideals, bonds, flaws, backstory, allies, and enemies.
+    - Skills and Languages: Character's skills and languages, both standard and custom.
+    - Equipment and Treasure: Items and treasures the character possesses.
+    - Spellcasting: Information about the character's spellcasting class, ability, save DC, and attack bonus.
+    - Portraits: Displays generated character portraits if available.
+
+    Args:
+        character (dict): A dictionary containing the character's details. The dictionary keys 
+                          correspond to various character attributes, and this function updates
+                          the dictionary in-place based on user input.
+
+    Returns:
+        None. The function updates the `character` dictionary in-place and displays the form 
+        fields on the Streamlit app.
+    """
     character['name'] = st.text_input("Character Name", character['name'])
     character['description'] = st.text_area("Description", character['description'])
 
     with st.expander("Basic Info"):
-        character['race'] = st.selectbox("Race", race_options, index=race_options.index(character['race']) if character['race'] in race_options else 0)
-        character['class'] = st.selectbox("Class", class_options, index=class_options.index(character['class']) if character['class'] in class_options else 0)
+        character['pronouns'] = st.text_input("Pronouns", character.get('pronouns', ''))
+        character['orientation'] = st.text_input("Orientation", character.get('orientation', ''))
+        character['race'] = st.text_input("Race", character['race'])
+        character['class'] = st.text_input("Class", character['class'])
         character['alignment'] = st.selectbox("Alignment", alignment_options, index=alignment_options.index(character['alignment']) if character['alignment'] in alignment_options else 0)
         character['background'] = st.selectbox("Background", background_options, index=background_options.index(character['background']) if character['background'] in background_options else 0)
         character['age'] = st.number_input("Age", min_value=1, max_value=500, value=int(character['age']))
@@ -341,6 +366,7 @@ def build_form(character):
         character['spellcasting_ability'] = st.text_input("Spellcasting Ability", character['spellcasting_ability'])
         character['spell_save_dc'] = st.text_input("Spell Save DC", character['spell_save_dc'])
         character['spell_attack_bonus'] = st.text_input("Spell Attack Bonus", character['spell_attack_bonus'])
+    
     if 'portrait_filenames' in st.session_state and st.session_state.portrait_filenames:
         for filename in st.session_state.portrait_filenames:
             st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
