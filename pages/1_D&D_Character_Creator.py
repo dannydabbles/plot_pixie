@@ -7,6 +7,7 @@ import pandas as pd
 import requests
 from uuid import uuid4
 from fpdf import FPDF
+from PIL import Image
 
 # Set OpenAI API Key
 #openai.api_key = os.environ.get('OPENAI_API_KEY')
@@ -65,13 +66,6 @@ spellcasting_class_options = [
     "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
 ]
 
-# Initialize the session state for the character if not present
-if "character" not in st.session_state:
-    st.session_state.character = {}
-
-def unique_key(base_key_name):
-    """Generate a unique key for Streamlit widgets."""
-    return f"{base_key_name}_uuid{uuid4()}"
 
 def get_character_age():
     """
@@ -161,24 +155,29 @@ def save_dalle_image_to_disk(image_url, character_name, portrait_num):
     
     # Use character name in filename
     filename_base = character_name.replace(" ", "_") if character_name else "default_character"
-    filename = f"{IMAGE_DIRECTORY}/{filename_base}_portrait_{portrait_num}.png"
+    filename = f"{IMAGE_DIRECTORY}/{filename_base}"
     with open(filename, "wb") as file:
         file.write(response.content)
     return filename
 
-def generate_portrait(prompt):
+def generate_portrait(prompt, character_name):
     """
     Generate a portrait based on the prompt using DALL-E and save it locally.
     
     Args:
     - prompt (str): The prompt for DALL-E to generate an image.
+    - character_name (str): The name of the character for filename generation.
 
     Returns:
     - str: Filepath where the portrait is saved.
     """
     response = openai.Image.create(prompt=prompt, n=1, size="256x256")
     image_url = response.data[0]['url']
-    filename = f".png"
+    
+    # Create a proper filename using the character's name and a unique identifier
+    safe_name = character_name.replace(" ", "_")
+    filename = f"{safe_name}_{uuid4()}.png"
+    
     return save_dalle_image_to_disk(image_url, filename, 1)
 
 def create_pdf_character_sheet(character, portrait_filenames):
@@ -194,18 +193,61 @@ def create_pdf_character_sheet(character, portrait_filenames):
     """
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=character['name'], ln=True)
-    for key, value in character.items():
-        if key != "name":
-            pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
+
+    # Title: Character Name
+    pdf.set_font("Arial", 'B', 24)
+    pdf.cell(0, 20, txt=character['name'], ln=True, align='C')
+
+    # Function to create section header
+    def add_section_header(title):
+        pdf.set_font("Arial", 'B', 18)
+        pdf.cell(0, 15, txt=title, ln=True, fill=True, align='L')
+
+    # Function to add key-value pair
+    def add_key_value(key, value):
+        pdf.set_font("Arial", size=12)
+        pdf.multi_cell(0, 10, txt=f"{key.replace('_', ' ').capitalize()}: {value}", align='L')
+
+    # Character Basic Info
+    add_section_header("Character Details")
+    basic_info_keys = ['race', 'class', 'alignment', 'background', 'age']
+    for key in basic_info_keys:
+        add_key_value(key, character[key])
+
+    # Character Traits
+    add_section_header("Character Traits")
+    trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws', 'character_backstory', 'allies_enemies']
+    for key in trait_keys:
+        add_key_value(key, character[key])
+
+    # Skills and Languages
+    add_section_header("Skills & Languages")
+    add_key_value("Skills", ', '.join(character['skills']))
+    add_key_value("Languages", ', '.join(character['languages']))
+
+    # Equipment and Treasure
+    add_section_header("Equipment & Treasure")
+    add_key_value("Equipment", character['equipment'])
+    add_key_value("Treasure", character['treasure'])
+
+    # Portraits
     for filename in portrait_filenames:
-        pdf.image(filename, x=10, y=None, w=90)
-    
-    # Use character name in filename
-    filename_base = character['name'].replace(" ", "_") if character['name'] else "default_character"
-    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{filename_base}.pdf")
+        try:
+            pdf.ln(10)
+            pdf.image(filename, x=10, y=None, w=90)
+            pdf.ln(5)
+        except Exception as e:
+            st.warning(f"Error adding image {filename} to PDF: {e}")
+
+    # Footer with page number
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.alias_nb_pages()
+    pdf.set_font("Arial", 'I', 8)
+    pdf.cell(0, 10, 'Page ' + str(pdf.page_no()) + '/{nb}', 0, 0, 'C')
+
+    pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}.pdf")
     pdf.output(pdf_file_path)
+
     return pdf_file_path
 
 def transform_to_dict(data_str):
@@ -325,7 +367,7 @@ def main():
             #st.write("No portrait prompt provided. Skipping portrait generation.")
             continue
 
-        portrait_filenames.append(generate_portrait(portrait_prompt))
+        portrait_filenames.append(generate_portrait(portrait_prompt, character['name']))
 
     for filename in portrait_filenames:
         portrait_placeholder = st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
