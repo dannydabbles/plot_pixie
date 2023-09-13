@@ -345,12 +345,19 @@ def main():
             try:
                 # Create PDF character sheet and save
                 pdf_filename = create_pdf_character_sheet(character, portrait_filenames)
-                st.write(f"Character sheet saved as {pdf_filename}")
-                st.markdown(f"[Click here to download the character sheet]({pdf_filename})")
+
+                # Save the path to the PDF in the session state
+                st.session_state.pdf_path = pdf_filename
+
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
                 return
+
         st.experimental_rerun()
+
+    # If there's a valid PDF path in the session state, display the download button
+    if 'pdf_path' in st.session_state and st.session_state.pdf_path:
+        st.markdown(f"[Download Character Sheet PDF]({st.session_state.pdf_path})")
 
 if __name__ == "__main__":
     main()
