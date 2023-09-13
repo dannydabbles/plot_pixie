@@ -66,6 +66,21 @@ spellcasting_class_options = [
     "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
 ]
 
+def get_character_age():
+    """
+    Generate a weighted random age for a character between 0 and 500 years old.
+
+    Returns:
+        int: The age of the character.
+    """
+    age_weights = [0.05, 0.1, 0.45, 0.2, 0.1, 0.05, 0.05]
+    age_choices = [
+        random.randint(1, 13), random.randint(13, 17), random.randint(18, 35),
+        random.randint(36, 50), random.randint(50, 100), random.randint(101, 200),
+        random.randint(201, 500)
+    ]
+    age = random.choices(age_choices, weights=age_weights)[0]
+    return age
 
 def get_character_data(character):
     """
@@ -108,6 +123,99 @@ def get_character_data(character):
         "spell_save_dc": "16",
         "spell_attack_bonus": "+8",
         "portrait_prompt": "A tall and slender High Elf named Liora Moonshadow with long, flowing silver hair and piercing blue eyes. She wears enlightened robes and a silver circlet on her forehead. Around her neck, she has a crystal orb necklace. In her hand, she holds a Staff of the Arcane and carries a spellbook."
+    },
+    {
+        "name": "Hootclaw",
+        "description": "An intelligent owlbear with a curious nature. Despite his fierce appearance, he's gentle at heart and possesses a unique magic affinity.",
+        "appearance": "Hootclaw stands tall with a mix of owl and bear features. His feathered body is a mix of brown and white with sharp talons and a beak. His eyes are large and yellow, displaying a surprising depth of understanding.",
+        "age": 15,
+        "pronouns": "They/Them",
+        "orientation": "Asexual",
+        "race": "Owlbear",
+        "class": "Druid",
+        "alignment": "Neutral Good",
+        "background": "Wilderness",
+        "personality_traits": "I'm naturally curious and love to explore. I communicate more through actions than words.",
+        "ideals": "Harmony. Nature is a balance of forces that should be respected.",
+        "bonds": "The forest is my home, and I will defend it.",
+        "flaws": "I'm easily distracted by shiny objects.",
+        "character_backstory": "Hootclaw was found as a cub by a circle of druids who recognized his innate magical abilities. Raised among them, he learned the ways of nature and magic.",
+        "allies_enemies": "Allied with the Druid Circle of the Whispering Pines. Watchful of hunters and trappers.",
+        "languages": "Beast Speech, Druidic",
+        "skills": "Nature, Perception",
+        "custom_language": "Owlbear vocalizations",
+        "custom_skill": "Mystical communion with forest spirits",
+        "equipment": "Mystical totems, herbs, and a pouch of shiny trinkets",
+        "treasure": "A feather imbued with protective magic",
+        "custom_equipment": "Talismans made from forest materials",
+        "custom_treasure": "A luminescent mushroom with healing properties",
+        "spellcasting_class": "Druid",
+        "spellcasting_ability": "Wisdom",
+        "spell_save_dc": "14",
+        "spell_attack_bonus": "+6",
+        "portrait_prompt": "A large owlbear named Hootclaw with a mix of brown and white feathers, sharp talons, and deep yellow eyes."
+    },
+    {
+        "name": "Ella Starshine",
+        "description": "A young and enthusiastic adventurer with a bright spirit. She's always ready for a new quest and carries a small wooden sword.",
+        "appearance": "Ella is a petite child with curly golden hair and freckles. She wears simple clothes and a cloak made from her grandmother's old quilt. Her eyes sparkle with mischief and curiosity.",
+        "age": 8,
+        "pronouns": "She/Her",
+        "orientation": "Too young to determine",
+        "race": "Halfling",
+        "class": "Rogue",
+        "alignment": "Chaotic Good",
+        "background": "Urchin",
+        "personality_traits": "I'm always curious and can't resist poking my nose into every mystery. I love to make new friends.",
+        "ideals": "Adventure. Every day is a new story waiting to be written.",
+        "bonds": "I cherish the quilt-cloak my grandmother gave me.",
+        "flaws": "I sometimes act without thinking, driven by my curiosity.",
+        "character_backstory": "Ella grew up listening to tales of adventure from her grandmother. Inspired, she decided to set out on her own little quests in and around her village.",
+        "allies_enemies": "Friends with the local animals. Afraid of the grumpy old miller.",
+        "languages": "Common, Halfling",
+        "skills": "Acrobatics, Stealth",
+        "custom_language": "Animal whispers",
+        "custom_skill": "Finding hidden paths",
+        "equipment": "Small wooden sword, quilt-cloak, and a pouch of marbles",
+        "treasure": "A tiny gem she believes is magic",
+        "custom_equipment": "A tiny compass that always points to her home",
+        "custom_treasure": "A feather from a 'real' phoenix",
+        "spellcasting_class": "None",
+        "spellcasting_ability": "N/A",
+        "spell_save_dc": "N/A",
+        "spell_attack_bonus": "N/A",
+        "portrait_prompt": "A petite halfling child named Ella Starshine with curly golden hair, freckles, and sparkling eyes. She wears a quilt-cloak and holds a small wooden sword."
+    },
+    {
+        "name": "Nerida Lumina",
+        "description": "An ancient merfolk who has seen the rise and fall of empires beneath the waves. Their beauty and wisdom are unmatched, and their heart embraces a myriad of loves.",
+        "appearance": "Nerida has long, flowing hair that shifts colors like the northern lights. Their scales shimmer in shades of blue and green, and their eyes are deep pools of ancient knowledge. They wear ornaments made of coral and pearls.",
+        "age": 453,
+        "pronouns": "They/Them",
+        "orientation": "Pansexual",
+        "race": "Merfolk",
+        "class": "Bard",
+        "alignment": "Neutral",
+        "background": "Noble",
+        "personality_traits": "I am calm and reflective, often sharing tales of the past. I appreciate the beauty in all things.",
+        "ideals": "Love. The heart's capacity for love is boundless.",
+        "bonds": "I am bound to the great Coral Throne and its legacy.",
+        "flaws": "I often get lost in memories, sometimes neglecting the present.",
+        "character_backstory": "Nerida is a descendant of the ancient Lumina lineage, rulers of the underwater city of Luminara. They've witnessed centuries of history and are a keeper of ancient songs and tales.",
+        "allies_enemies": "Allied with the Court of Luminara. Watchful of the Abyssal Marauders.",
+        "languages": "Common, Aquan, Sylvan",
+        "skills": "Performance, History",
+        "custom_language": "Ancient Merfolk Song",
+        "custom_skill": "Siren's call",
+        "equipment": "Lute made of seashells, coral crown, and a pouch of sea gems",
+        "treasure": "A pearl that holds the memories of their ancestors",
+        "custom_equipment": "Coral harp that can calm turbulent waters",
+        "custom_treasure": "A starfish that can guide one to hidden underwater realms",
+        "spellcasting_class": "Bard",
+        "spellcasting_ability": "Charisma",
+        "spell_save_dc": "18",
+        "spell_attack_bonus": "+10",
+        "portrait_prompt": "An ancient merfolk named Nerida Lumina with hair that shifts colors like the northern lights and shimmering blue and green scales. They wear coral ornaments and hold a lute made of seashells."
     }
     ]
     messages=[
@@ -320,7 +428,7 @@ def build_form(character):
         character['class'] = st.text_input("Class", character['class'])
         character['alignment'] = st.text_input("Alignment", character['alignment'])
         character['background'] = st.text_input("Background", character['background'])
-        character['age'] = st.text_input("Age", value=character['age'])
+        character['age'] = st.text_input("Age", character['age'] or get_character_age())
 
     with st.expander("Character Traits"):
         character['appearance'] = st.text_area("Appearance", character['appearance'])
