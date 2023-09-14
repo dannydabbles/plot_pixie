@@ -314,21 +314,6 @@ def create_pdf_character_sheet(character, portrait_filenames):
 
     return pdf_file_path
 
-def transform_to_dict(data_str):
-    """
-    Transform the provided data string into a dictionary.
-
-    Args:
-    - data_str (str): The string containing "key: value" pairs separated by newlines.
-
-    Returns:
-    - dict: The transformed dictionary.
-    """
-    print(f"Data string: {data_str}")
-    #import ipdb; ipdb.set_trace()
-    data_dict = json.loads(data_str)  # Convert the string to a dictionary
-    return data_dict
-
 def default_character():
     default_character = {
         "name": "",
@@ -449,7 +434,6 @@ def main():
     character = st.session_state.character
 
     form = build_form(character)
-    #import ipdb; ipdb.set_trace()
 
     if form.form_submit_button("Generate Character Sheet", use_container_width=True):
         portrait_placeholder = st.empty()
