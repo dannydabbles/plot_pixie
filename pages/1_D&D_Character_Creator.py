@@ -73,7 +73,7 @@ def get_character_data(character):
         {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
         {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable. Also include a portrait_prompt value we can pass to dalle to create a character portrait."},
         {"role": "user", "content": f"{json.dumps(character)}"},
-        {"role": "system", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank.  Make the generated character unique. Make sure facts about the character are consistent across the generated character sheet JSON."},
+        {"role": "user", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank.  Make the generated character is unique. Make sure facts about the character are consistent across the generated character sheet JSON.  Make sure all stats make sense for the character. Don't change any non-empy values from the given character sheet.  Impress me."},
     ]
     print(f"Messages: {messages}")
     response = openai.ChatCompletion.create(
@@ -314,8 +314,9 @@ def build_form(character):
             character['attacks_spellcasting'] = st.text_area("Details", character.get('attacks_spellcasting', ''), key='attacks_details_input')
 
         # Other Proficiencies and Languages
-        with st.expander("Other Proficiencies and Languages"):
-            character['other_proficiencies_languages'] = st.text_area("Details", character.get('other_proficiencies_languages', ''), key='proficiencies_details_input')
+        with st.expander("Proficiencies and Languages"):
+            character['languages'] = st.text_input("Languages", character.get('languages', ''))
+            character['proficiencies'] = st.text_input("Proficiencies", character.get('proficiencies', ''))
 
         # Equipment
         with st.expander("Equipment"):
