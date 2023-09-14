@@ -10,9 +10,6 @@ from fpdf import FPDF
 from PIL import Image
 
 # Set OpenAI API Key
-#openai.api_key = os.environ.get('OPENAI_API_KEY')
-
-# Set OpenAI API Key
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 if not OPENAI_API_KEY:
     raise ValueError("Missing OPENAI_API_KEY")
@@ -22,6 +19,7 @@ CURRENT_DIRECTORY = os.getcwd()
 IMAGE_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "images")
 CHARACTER_SHEET_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "character_sheets")
 DATA_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "data")
+PAGES_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "pages")
 MAX_TOKENS = 1500
 
 # Ensure directories exist
@@ -30,41 +28,6 @@ os.makedirs(CHARACTER_SHEET_DIRECTORY, exist_ok=True)
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
 # List options
-race_options = [
-    "", "Human", "Elf", "Dwarf", "Orc", "Tiefling", "Gnome", "Halfling", 
-    "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Triton", "Custom"
-]
-class_options = [
-    "", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
-    "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
-]
-alignment_options = [
-    "", "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", 
-    "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"
-]
-background_options = [
-    "", "Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", 
-    "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", 
-    "Soldier", "Urchin", "Custom"
-]
-spellcasting_class_options = [
-    "", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
-    "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
-]
-languages_options = [
-    "", "Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling",
-    "Orc", "Abyssal", "Celestial", "Draconic", "Deep Speech", "Infernal",
-    "Primordial", "Sylvan", "Undercommon", "Custom"
-]
-skills_options = [
-    "Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", 
-    "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", 
-    "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival", "Custom"
-]
-spellcasting_class_options = [
-    "", "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", 
-    "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Custom"
-]
 
 def get_character_age():
     """
@@ -82,6 +45,18 @@ def get_character_age():
     age = random.choices(age_choices, weights=age_weights)[0]
     return age
 
+def get_character_examples():
+    """
+    Load character_examples.json file in current directory.
+
+    Returns:
+        list: List of character examples.
+    """
+    character_examples = []
+    with open(os.path.join(PAGES_DIRECTORY, "character_examples.json")) as f:
+        character_examples = json.loads(f.read())
+    return character_examples
+
 def get_character_data(character):
     """
     Query the ChatGPT API to fill out missing character data based on provided data.
@@ -92,101 +67,7 @@ def get_character_data(character):
     Returns:
         str: Generated character description.
     """
-    examples = [
-    {
-        "name": "Hootclaw",
-        "description": "An intelligent owlbear with a curious nature. Despite his fierce appearance, he's gentle at heart and possesses a unique magic affinity.",
-        "appearance": "Hootclaw stands tall with a mix of owl and bear features. His feathered body is a mix of brown and white with sharp talons and a beak. His eyes are large and yellow, displaying a surprising depth of understanding.",
-        "age": 15,
-        "pronouns": "They/Them",
-        "orientation": "Asexual",
-        "race": "Owlbear",
-        "class": "Druid",
-        "alignment": "Neutral Good",
-        "background": "Wilderness",
-        "personality_traits": "I'm naturally curious and love to explore. I communicate more through actions than words.",
-        "ideals": "Harmony. Nature is a balance of forces that should be respected.",
-        "bonds": "The forest is my home, and I will defend it.",
-        "flaws": "I'm easily distracted by shiny objects.",
-        "character_backstory": "Hootclaw was found as a cub by a circle of druids who recognized his innate magical abilities. Raised among them, he learned the ways of nature and magic.",
-        "allies_enemies": "Allied with the Druid Circle of the Whispering Pines. Watchful of hunters and trappers.",
-        "languages": "Beast Speech, Druidic",
-        "skills": "Nature, Perception",
-        "custom_language": "Owlbear vocalizations",
-        "custom_skill": "Mystical communion with forest spirits",
-        "equipment": "Mystical totems, herbs, and a pouch of shiny trinkets",
-        "treasure": "A feather imbued with protective magic",
-        "custom_equipment": "Talismans made from forest materials",
-        "custom_treasure": "A luminescent mushroom with healing properties",
-        "spellcasting_class": "Druid",
-        "spellcasting_ability": "Wisdom",
-        "spell_save_dc": "14",
-        "spell_attack_bonus": "+6",
-        "portrait_prompt": "A large owlbear named Hootclaw with a mix of brown and white feathers, sharp talons, and deep yellow eyes."
-    },
-    {
-        "name": "Ella Starshine",
-        "description": "A young and enthusiastic adventurer with a bright spirit. She's always ready for a new quest and carries a small wooden sword.",
-        "appearance": "Ella is a petite child with curly golden hair and freckles. She wears simple clothes and a cloak made from her grandmother's old quilt. Her eyes sparkle with mischief and curiosity.",
-        "age": 8,
-        "pronouns": "She/Her",
-        "orientation": "Too young to determine",
-        "race": "Halfling",
-        "class": "Rogue",
-        "alignment": "Chaotic Good",
-        "background": "Urchin",
-        "personality_traits": "I'm always curious and can't resist poking my nose into every mystery. I love to make new friends.",
-        "ideals": "Adventure. Every day is a new story waiting to be written.",
-        "bonds": "I cherish the quilt-cloak my grandmother gave me.",
-        "flaws": "I sometimes act without thinking, driven by my curiosity.",
-        "character_backstory": "Ella grew up listening to tales of adventure from her grandmother. Inspired, she decided to set out on her own little quests in and around her village.",
-        "allies_enemies": "Friends with the local animals. Afraid of the grumpy old miller.",
-        "languages": "Common, Halfling",
-        "skills": "Acrobatics, Stealth",
-        "custom_language": "Animal whispers",
-        "custom_skill": "Finding hidden paths",
-        "equipment": "Small wooden sword, quilt-cloak, and a pouch of marbles",
-        "treasure": "A tiny gem she believes is magic",
-        "custom_equipment": "A tiny compass that always points to her home",
-        "custom_treasure": "A feather from a 'real' phoenix",
-        "spellcasting_class": "None",
-        "spellcasting_ability": "N/A",
-        "spell_save_dc": "N/A",
-        "spell_attack_bonus": "N/A",
-        "portrait_prompt": "A petite halfling child named Ella Starshine with curly golden hair, freckles, and sparkling eyes. She wears a quilt-cloak and holds a small wooden sword."
-    },
-    {
-        "name": "Nerida Lumina",
-        "description": "An ancient merfolk who has seen the rise and fall of empires beneath the waves. Their beauty and wisdom are unmatched, and their heart embraces a myriad of loves.",
-        "appearance": "Nerida has long, flowing hair that shifts colors like the northern lights. Their scales shimmer in shades of blue and green, and their eyes are deep pools of ancient knowledge. They wear ornaments made of coral and pearls.",
-        "age": 453,
-        "pronouns": "They/Them",
-        "orientation": "Pansexual",
-        "race": "Merfolk",
-        "class": "Bard",
-        "alignment": "Neutral",
-        "background": "Noble",
-        "personality_traits": "I am calm and reflective, often sharing tales of the past. I appreciate the beauty in all things.",
-        "ideals": "Love. The heart's capacity for love is boundless.",
-        "bonds": "I am bound to the great Coral Throne and its legacy.",
-        "flaws": "I often get lost in memories, sometimes neglecting the present.",
-        "character_backstory": "Nerida is a descendant of the ancient Lumina lineage, rulers of the underwater city of Luminara. They've witnessed centuries of history and are a keeper of ancient songs and tales.",
-        "allies_enemies": "Allied with the Court of Luminara. Watchful of the Abyssal Marauders.",
-        "languages": "Common, Aquan, Sylvan",
-        "skills": "Performance, History",
-        "custom_language": "Ancient Merfolk Song",
-        "custom_skill": "Siren's call",
-        "equipment": "Lute made of seashells, coral crown, and a pouch of sea gems",
-        "treasure": "A pearl that holds the memories of their ancestors",
-        "custom_equipment": "Coral harp that can calm turbulent waters",
-        "custom_treasure": "A starfish that can guide one to hidden underwater realms",
-        "spellcasting_class": "Bard",
-        "spellcasting_ability": "Charisma",
-        "spell_save_dc": "18",
-        "spell_attack_bonus": "+10",
-        "portrait_prompt": "An ancient merfolk named Nerida Lumina with hair that shifts colors like the northern lights and shimmering blue and green scales. They wear coral ornaments and hold a lute made of seashells."
-    }
-    ]
+    examples = get_character_examples()
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
         {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
@@ -315,36 +196,15 @@ def create_pdf_character_sheet(character, portrait_filenames):
     return pdf_file_path
 
 def default_character():
-    default_character = {
-        "name": "",
-        "description": "",
-        "appearance": "",
-        "race": "",
-        "class": "",
-        "alignment": "",
-        "background": "",
-        "age": "",
-        "personality_traits": "",
-        "ideals": "",
-        "bonds": "",
-        "flaws": "",
-        "character_backstory": "",
-        "allies_enemies": "",
-        "languages": "",
-        "custom_language": "",
-        "skills": "",
-        "custom_skill": "",
-        "equipment": "",
-        "treasure": "",
-        "custom_equipment": "",
-        "custom_treasure": "",
-        "spellcasting_class": "",
-        "custom_spellcasting_class": "",
-        "spellcasting_ability": "",
-        "spell_save_dc": "",
-        "spell_attack_bonus": "",
-        "portrait_prompt": ""  # This key can be used to store a prompt for generating a character portrait
-    }
+    # Grab an example character and clear out the values
+    character_examples = get_character_examples()
+
+    default_character = character_examples[0]
+    for key in default_character:
+        if isinstance(default_character[key], list):
+            default_character[key] = []
+        else:
+            default_character[key] = ""
     return default_character
 
 # Set the page configuration at the very top of the script
@@ -407,7 +267,6 @@ def build_form(character):
 
         with st.expander("Spellcasting"):
             character['spellcasting_class'] = st.text_input("Spellcasting Class", character['spellcasting_class'])
-            character['custom_spellcasting_class'] = st.text_input("Custom Spellcasting Class", character['custom_spellcasting_class'])
             character['spellcasting_ability'] = st.text_input("Spellcasting Ability", character['spellcasting_ability'])
             character['spell_save_dc'] = st.text_input("Spell Save DC", character['spell_save_dc'])
             character['spell_attack_bonus'] = st.text_input("Spell Attack Bonus", character['spell_attack_bonus'])
