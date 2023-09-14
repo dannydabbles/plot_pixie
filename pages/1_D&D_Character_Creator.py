@@ -77,7 +77,7 @@ def get_character_data(character):
     ]
     print(f"Messages: {messages}")
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=messages, max_tokens=MAX_TOKENS
+        model="gpt-3.5-turbo-16k", messages=messages, max_tokens=MAX_TOKENS
     ) 
     result = json.loads(response.choices[0].message.content)
     print(f"Result: {result}")
@@ -139,41 +139,74 @@ def create_pdf_character_sheet(character, portrait_filenames):
     pdf = FPDF()
     pdf.add_page()
 
+    # Set Colors for fill
+    fill_color = (220, 220, 220)  # Light gray
+
+    # Function to create section header
+    def add_section_header(title):
+        pdf.set_fill_color(*fill_color)
+        pdf.set_font("Arial", 'B', 18)
+        pdf.cell(0, 10, txt=title, ln=True, fill=True, align='L')
+
+    # Function to add key-value pair
+    def add_key_value(key, value, w1=90, w2=90):
+        pdf.set_font("Arial", size=12)
+        pdf.cell(w1, 10, txt=f"{key.replace('_', ' ').capitalize()}:", align='R')
+        pdf.multi_cell(w2, 10, txt=f"{value}", align='L')
+
     # Title: Character Name
     pdf.set_font("Arial", 'B', 24)
     pdf.cell(0, 20, txt=character['name'], ln=True, align='C')
 
-    # Function to create section header
-    def add_section_header(title):
-        pdf.set_font("Arial", 'B', 18)
-        pdf.cell(0, 15, txt=title, ln=True, fill=True, align='L')
-
-    # Function to add key-value pair
-    def add_key_value(key, value):
-        pdf.set_font("Arial", size=12)
-        pdf.multi_cell(0, 10, txt=f"{key.replace('_', ' ').capitalize()}: {value}", align='L')
-
-    # Character Basic Info
-    add_section_header("Character Details")
-    basic_info_keys = ['pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age']
+    # Basic Info
+    add_section_header("Basic Info")
+    pdf.ln(5)
+    basic_info_keys = ['level', 'pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age', 'description']
     for key in basic_info_keys:
         add_key_value(key, character[key])
 
+    # Character Stats (in two columns)
+    add_section_header("Character Stats")
+    stats_keys_left = ['armor_class', 'hit_points', 'speed', 'strength', 'dexterity', 'constitution']
+    stats_keys_right = ['intelligence', 'wisdom', 'charisma', 'passive_wisdom', 'inspiration', 'proficiency_bonus']
+    for key_left, key_right in zip(stats_keys_left, stats_keys_right):
+        add_key_value(key_left, character[key_left], 60, 60)
+        add_key_value(key_right, character[key_right], 60, 60)
+
+    # Saving Throws & Skills
+    add_section_header("Saving Throws & Skills")
+    throws_keys = ['strength_save', 'dexterity_save', 'constitution_save', 'intelligence_save', 'wisdom_save', 'charisma_save']
+    for key in throws_keys:
+        add_key_value(key, character[key])
+    add_key_value("Skills", character['skills'], w1=50, w2=140)
+
+    # Proficiencies & Languages
+    add_section_header("Proficiencies & Languages")
+    add_key_value("Languages", character['languages'], w1=50, w2=140)
+    add_key_value("Proficiencies", character['proficiencies'], w1=50, w2=140)
+
     # Character Traits
     add_section_header("Character Traits")
-    trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws', 'character_backstory', 'allies_enemies']
+    trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws']
     for key in trait_keys:
-        add_key_value(key, character[key])
+        add_key_value(key, character[key], w1=50, w2=140)
 
-    # Skills and Languages
-    add_section_header("Skills & Languages")
-    add_key_value("Skills", ', '.join(character['skills']))
-    add_key_value("Languages", ', '.join(character['languages']))
+    # Additional Features & Traits
+    add_section_header("Additional Features & Traits")
+    add_key_value("Features", character['features_traits'], w1=50, w2=140)
+    add_key_value("Additional Features", character['additional_features_traits'], w1=50, w2=140)
 
-    # Equipment and Treasure
+    # Equipment & Treasure
     add_section_header("Equipment & Treasure")
-    add_key_value("Equipment", character['equipment'])
-    add_key_value("Treasure", character['treasure'])
+    add_key_value("Equipment", character['equipment'], w1=50, w2=140)
+    add_key_value("Treasure", character['treasure'], w1=50, w2=140)
+
+    # Attacks & Spellcasting
+    add_section_header("Attacks & Spellcasting")
+    add_key_value("Spellcasting Class", character['spellcasting_class'], w1=90, w2=100)
+    add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=90, w2=100)
+    add_key_value("Spell Save DC", character['spell_save_dc'], w1=90, w2=100)
+    add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=90, w2=100)
 
     # Portraits
     for filename in portrait_filenames:
@@ -281,7 +314,7 @@ def build_form(character):
             character['intelligence'] = cols[0].text_input("Intelligence", character.get('intelligence', ''), key='stats_intelligence_input')
             character['wisdom'] = cols[1].text_input("Wisdom", character.get('wisdom', ''), key='stats_wisdom_input')
             character['charisma'] = cols[2].text_input("Charisma", character.get('charisma', ''), key='stats_charisma_input')
-            character['passive_wisdom'] = cols[3].text_input("Passive Wisdom (Perception)", character.get('passive_wisdom', ''), key='stats_passive_wisdom_input')
+            character['passive_wisdom'] = cols[3].text_input("Passive Wisdom (Perception)", character.get('passive_wisdom_perception', ''), key='stats_passive_wisdom_input')
             character['inspiration'] = cols[4].text_input("Inspiration", character.get('inspiration', ''), key='stats_inspiration_input')
             character['proficiency_bonus'] = cols[5].text_input("Proficiency Bonus", character.get('proficiency_bonus', ''), key='stats_proficiency_bonus_input')
 
@@ -341,11 +374,11 @@ def build_form(character):
         # Spells Known
         with st.expander("Spells Known"):
             for level in range(1, 10):
-                character[f'spells_level_{level}'] = st.text_area(f"Level {level} Spells", character.get(f'spells_level_{level}', ''), key=f'spells_level_{level}_input')
+                character[f'{level}_level_spells'] = st.text_area(f"Level {level} Spells", character.get(f'{level}_level_spells', ''), key=f'{level}_level_spells_input')
 
         # Character Appearance
         with st.expander("Character Appearance"):
-            character['appearance'] = st.text_area("Details", character.get('appearance', ''), key='appearance_details_input')
+            character['character_appearance'] = st.text_area("Details", character.get('character_appearance', ''), key='character_appearance_details_input')
 
         # Character Backstory
         with st.expander("Character Backstory"):
@@ -401,7 +434,7 @@ def main():
 
                     # Check if portrait_prompt is empty
                     if not portrait_prompt:
-                        #st.write("No portrait prompt provided. Skipping portrait generation.")
+                        st.write("No portrait prompt provided. Skipping portrait generation.")
                         continue
 
                     with st.spinner('Generating character portrait...'):
