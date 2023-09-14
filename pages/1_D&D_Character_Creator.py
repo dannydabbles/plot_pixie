@@ -387,7 +387,7 @@ def build_form(character):
         None. The function updates the `character` dictionary in-place and displays the form 
         fields on the Streamlit app.
     """
-    form = st.form(key='character_form')
+    form = st.form(key='character_form', clear_on_submit=True)
     with form:
         character['name'] = st.text_input("Character Name", character['name'])
         character['description'] = st.text_area("Description", character['description'])
@@ -451,7 +451,7 @@ def main():
     form = build_form(character)
     #import ipdb; ipdb.set_trace()
 
-    if form.form_submit_button("Generate Character Sheet"):
+    if form.form_submit_button("Generate Character Sheet", use_container_width=True):
         portrait_placeholder = st.empty()
         save_button_placeholder = st.empty()
 
