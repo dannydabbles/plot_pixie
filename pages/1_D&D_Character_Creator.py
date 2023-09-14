@@ -240,6 +240,13 @@ def build_form(character):
     form = st.form(key='character_form', clear_on_submit=True)
 
     with form:
+        if 'portrait_filenames' in st.session_state and st.session_state.portrait_filenames:
+            for filename in st.session_state.portrait_filenames:
+                st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
+        # If there's a valid PDF path in the session state, display the download button
+        if 'pdf_path' in st.session_state and st.session_state.pdf_path:
+            st.markdown(f"[Download Character Sheet PDF]({st.session_state.pdf_path})")
+
         # Level, Name, Description
         character['level'] = st.text_input("Level", character.get('level', ''))
         character['name'] = st.text_input("Character Name", character['name'])
@@ -350,13 +357,6 @@ def build_form(character):
         # Treasure
         with st.expander("Treasure"):
             character['treasure'] = st.text_area("Details", character.get('treasure', ''), key='treasure_details_input')
-
-        if 'portrait_filenames' in st.session_state and st.session_state.portrait_filenames:
-            for filename in st.session_state.portrait_filenames:
-                st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
-        # If there's a valid PDF path in the session state, display the download button
-        if 'pdf_path' in st.session_state and st.session_state.pdf_path:
-            st.markdown(f"[Download Character Sheet PDF]({st.session_state.pdf_path})")
 
     return form
 
