@@ -71,9 +71,9 @@ def get_character_data(character):
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
         {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
-        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable. Also include a portrait_prompt value we can pass to dalle to create a character portrait."},
+        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely, leaving no empty values. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable. Also include a portrait_prompt value we can pass to dalle to create a character portrait."},
         {"role": "user", "content": f"{json.dumps(character)}"},
-        {"role": "user", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank.  Make the generated character is unique. Make sure facts about the character are consistent across the generated character sheet JSON.  Make sure all stats make sense for the character. Don't change any non-empy values from the given character sheet.  Impress me."},
+        {"role": "user", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank.  Make the generated character is unique. Make sure facts about the character are consistent across the generated character sheet JSON.  Make sure all stats make sense for the character and are filled out. Don't change any values from the given character sheet. All character sheet values should be formatted as text strings.  Impress me."},
     ]
     print(f"Messages: {messages}")
     response = openai.ChatCompletion.create(
@@ -361,7 +361,7 @@ def build_form(character):
 
         # Allies and Organizations
         with st.expander("Allies and Organizations"):
-            character['allies_enemies'] = st.text_area("Details", character.get('allies_enemies', ''), key='allies_details_input')
+            character['allies_organizations'] = st.text_area("Details", character.get('allies_organizations', ''), key='allies_organizations_details_input')
 
         # Spellcasting
         with st.expander("Spellcasting"):
