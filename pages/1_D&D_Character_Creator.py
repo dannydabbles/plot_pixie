@@ -216,12 +216,18 @@ def build_form(character):
     character details for a D&D character.
 
     The form consists of multiple sections, including:
-    - Basic Information: Character's name, description, race, class, alignment, background, age, pronouns, and orientation.
-    - Character Traits: Appearance, personality traits, ideals, bonds, flaws, backstory, allies, and enemies.
-    - Skills and Languages: Character's skills and languages, both standard and custom.
-    - Equipment and Treasure: Items and treasures the character possesses.
-    - Spellcasting: Information about the character's spellcasting class, ability, save DC, and attack bonus.
-    - Portraits: Displays generated character portraits if available.
+    - Level, Character Name, and Description
+    - Basic Information: Character's pronouns, orientation, race, class, alignment, background, age, and other physical traits.
+    - Stats: Various statistics related to the character's abilities and combat readiness.
+    - Saving Throws: Character's saving throw proficiencies.
+    - Skills: Various skills the character is proficient in.
+    - Character Traits: Appearance, personality traits, ideals, bonds, flaws, and backstory.
+    - Attacks and Spellcasting: Information related to the character's combat and magic abilities.
+    - Other Proficiencies and Languages: Other skills and languages the character knows.
+    - Equipment: Gear and items the character possesses.
+    - Features and Traits: Special abilities and features the character has.
+    - Allies and Organizations: Allies and enemies of the character.
+    - Spellcasting: Information about the character's spellcasting abilities and known spells.
 
     Args:
         character (dict): A dictionary containing the character's details. The dictionary keys 
@@ -229,47 +235,121 @@ def build_form(character):
                           the dictionary in-place based on user input.
 
     Returns:
-        None. The function updates the `character` dictionary in-place and displays the form 
-        fields on the Streamlit app.
+        form: The Streamlit form object containing all the character input fields.
     """
     form = st.form(key='character_form', clear_on_submit=True)
+
     with form:
+        # Level, Name, Description
+        character['level'] = st.text_input("Level", character.get('level', ''))
         character['name'] = st.text_input("Character Name", character['name'])
         character['description'] = st.text_area("Description", character['description'])
 
+        # Basic Info
         with st.expander("Basic Info"):
-            character['pronouns'] = st.text_input("Pronouns", character.get('pronouns', ''))
-            character['orientation'] = st.text_input("Orientation", character.get('orientation', ''))
-            character['race'] = st.text_input("Race", character['race'])
-            character['class'] = st.text_input("Class", character['class'])
-            character['alignment'] = st.text_input("Alignment", character['alignment'])
-            character['background'] = st.text_input("Background", character['background'])
-            character['age'] = st.text_input("Age", character['age'] or get_character_age())
+            cols = st.columns(2)
+            character['pronouns'] = cols[0].text_input("Pronouns", character.get('pronouns', ''), key='basic_pronouns_input')
+            character['orientation'] = cols[0].text_input("Orientation", character.get('orientation', ''), key='basic_orientation_input')
+            character['race'] = cols[0].text_input("Race", character['race'], key='basic_race_input')
+            character['class'] = cols[0].text_input("Class", character['class'], key='basic_class_input')
+            character['alignment'] = cols[0].text_input("Alignment", character['alignment'], key='basic_alignment_input')
+            character['background'] = cols[0].text_input("Background", character['background'], key='basic_background_input')
+            character['age'] = cols[1].text_input("Age", character['age'], key='basic_age_input')
+            character['height'] = cols[1].text_input("Height", character.get('height', ''), key='basic_height_input')
+            character['weight'] = cols[1].text_input("Weight", character.get('weight', ''), key='basic_weight_input')
+            character['eyes'] = cols[1].text_input("Eyes", character.get('eyes', ''), key='basic_eyes_input')
+            character['skin'] = cols[1].text_input("Skin", character.get('skin', ''), key='basic_skin_input')
+            character['hair'] = cols[1].text_input("Hair", character.get('hair', ''), key='basic_hair_input')
+            character['experience_points'] = st.text_input("Experience Points", character.get('experience_points', ''), key='basic_experience_points_input')
 
+        # Stats
+        with st.expander("Stats"):
+            cols = st.columns(6)
+            character['armor_class'] = cols[0].text_input("Armor Class", character.get('armor_class', ''), key='stats_armor_class_input')
+            character['hit_points'] = cols[1].text_input("Hit Points", character.get('hit_points', ''), key='stats_hit_points_input')
+            character['speed'] = cols[2].text_input("Speed", character.get('speed', ''), key='stats_speed_input')
+            character['strength'] = cols[3].text_input("Strength", character.get('strength', ''), key='stats_strength_input')
+            character['dexterity'] = cols[4].text_input("Dexterity", character.get('dexterity', ''), key='stats_dexterity_input')
+            character['constitution'] = cols[5].text_input("Constitution", character.get('constitution', ''), key='stats_constitution_input')
+            character['intelligence'] = cols[0].text_input("Intelligence", character.get('intelligence', ''), key='stats_intelligence_input')
+            character['wisdom'] = cols[1].text_input("Wisdom", character.get('wisdom', ''), key='stats_wisdom_input')
+            character['charisma'] = cols[2].text_input("Charisma", character.get('charisma', ''), key='stats_charisma_input')
+            character['passive_wisdom'] = cols[3].text_input("Passive Wisdom (Perception)", character.get('passive_wisdom', ''), key='stats_passive_wisdom_input')
+            character['inspiration'] = cols[4].text_input("Inspiration", character.get('inspiration', ''), key='stats_inspiration_input')
+            character['proficiency_bonus'] = cols[5].text_input("Proficiency Bonus", character.get('proficiency_bonus', ''), key='stats_proficiency_bonus_input')
+
+        # Saving Throws
+        with st.expander("Saving Throws"):
+            cols = st.columns(6)
+            character['strength_save'] = cols[0].text_input("Strength", character.get('strength_save', ''), key='saves_strength_input')
+            character['dexterity_save'] = cols[1].text_input("Dexterity", character.get('dexterity_save', ''), key='saves_dexterity_input')
+            character['constitution_save'] = cols[2].text_input("Constitution", character.get('constitution_save', ''), key='saves_constitution_input')
+            character['intelligence_save'] = cols[3].text_input("Intelligence", character.get('intelligence_save', ''), key='saves_intelligence_input')
+            character['wisdom_save'] = cols[4].text_input("Wisdom", character.get('wisdom_save', ''), key='saves_wisdom_input')
+            character['charisma_save'] = cols[5].text_input("Charisma", character.get('charisma_save', ''), key='saves_charisma_input')
+
+        # Skills
+        with st.expander("Skills"):
+            cols = st.columns(4)
+            skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
+            for idx, skill in enumerate(skills_list):
+                character[skill.lower().replace(' ', '_')] = cols[idx % 4].text_input(skill, character.get(skill.lower().replace(' ', '_'), ''), key=f'skills_{skill.replace(" ", "_").lower()}_input')
+
+        # Character Traits
         with st.expander("Character Traits"):
-            character['appearance'] = st.text_area("Appearance", character['appearance'])
-            character['personality_traits'] = st.text_area("Personality Traits", character['personality_traits'])
-            character['ideals'] = st.text_area("Ideals", character['ideals'])
-            character['bonds'] = st.text_area("Bonds", character['bonds'])
-            character['flaws'] = st.text_area("Flaws", character['flaws'])
-            character['character_backstory'] = st.text_area("Backstory", character['character_backstory'])
-            character['allies_enemies'] = st.text_area("Allies & Enemies", character['allies_enemies'])
+            character['personality_traits'] = st.text_area("Personality Traits", character.get('personality_traits', ''), key='traits_personality_input')
+            character['ideals'] = st.text_area("Ideals", character.get('ideals', ''), key='traits_ideals_input')
+            character['bonds'] = st.text_area("Bonds", character.get('bonds', ''), key='traits_bonds_input')
+            character['flaws'] = st.text_area("Flaws", character.get('flaws', ''), key='traits_flaws_input')
 
-        with st.expander("Skills and Languages"):
-            character['skills'] = st.text_input("Skills", character['skills'])
-            character['languages'] = st.text_input("Languages", character['languages'])
+        # Attacks and Spellcasting
+        with st.expander("Attacks and Spellcasting"):
+            character['attacks_spellcasting'] = st.text_area("Details", character.get('attacks_spellcasting', ''), key='attacks_details_input')
 
-        with st.expander("Equipment and Treasure"):
-            character['equipment'] = st.text_area("Equipment", character['equipment'])
-            character['treasure'] = st.text_area("Treasure", character['treasure'])
-            character['custom_equipment'] = st.text_input("Custom Equipment", character['custom_equipment'])
-            character['custom_treasure'] = st.text_input("Custom Treasure", character['custom_treasure'])
+        # Other Proficiencies and Languages
+        with st.expander("Other Proficiencies and Languages"):
+            character['other_proficiencies_languages'] = st.text_area("Details", character.get('other_proficiencies_languages', ''), key='proficiencies_details_input')
 
+        # Equipment
+        with st.expander("Equipment"):
+            character['equipment'] = st.text_area("Details", character.get('equipment', ''), key='equipment_details_input')
+
+        # Features and Traits
+        with st.expander("Features and Traits"):
+            character['features_traits'] = st.text_area("Details", character.get('features_traits', ''), key='features_details_input')
+
+        # Allies and Organizations
+        with st.expander("Allies and Organizations"):
+            character['allies_enemies'] = st.text_area("Details", character.get('allies_enemies', ''), key='allies_details_input')
+
+        # Spellcasting
         with st.expander("Spellcasting"):
-            character['spellcasting_class'] = st.text_input("Spellcasting Class", character['spellcasting_class'])
-            character['spellcasting_ability'] = st.text_input("Spellcasting Ability", character['spellcasting_ability'])
-            character['spell_save_dc'] = st.text_input("Spell Save DC", character['spell_save_dc'])
-            character['spell_attack_bonus'] = st.text_input("Spell Attack Bonus", character['spell_attack_bonus'])
+            cols = st.columns(4)
+            character['spellcasting_class'] = cols[0].text_input("Spellcasting Class", character.get('spellcasting_class', ''), key='spells_class_input')
+            character['spellcasting_ability'] = cols[1].text_input("Spellcasting Ability", character.get('spellcasting_ability', ''), key='spells_ability_input')
+            character['spell_save_dc'] = cols[2].text_input("Spell Save DC", character.get('spell_save_dc', ''), key='spells_save_dc_input')
+            character['spell_attack_bonus'] = cols[3].text_input("Spell Attack Bonus", character.get('spell_attack_bonus', ''), key='spells_attack_bonus_input')
+
+        # Spells Known
+        with st.expander("Spells Known"):
+            for level in range(1, 10):
+                character[f'spells_level_{level}'] = st.text_area(f"Level {level} Spells", character.get(f'spells_level_{level}', ''), key=f'spells_level_{level}_input')
+
+        # Character Appearance
+        with st.expander("Character Appearance"):
+            character['appearance'] = st.text_area("Details", character.get('appearance', ''), key='appearance_details_input')
+
+        # Character Backstory
+        with st.expander("Character Backstory"):
+            character['character_backstory'] = st.text_area("Details", character.get('character_backstory', ''), key='backstory_details_input')
+
+        # Additional Features and Traits
+        with st.expander("Additional Features and Traits"):
+            character['additional_features_traits'] = st.text_area("Details", character.get('additional_features_traits', ''), key='additional_features_details_input')
+
+        # Treasure
+        with st.expander("Treasure"):
+            character['treasure'] = st.text_area("Details", character.get('treasure', ''), key='treasure_details_input')
 
         if 'portrait_filenames' in st.session_state and st.session_state.portrait_filenames:
             for filename in st.session_state.portrait_filenames:
