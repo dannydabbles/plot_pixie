@@ -88,11 +88,11 @@ def get_character_age():
     Returns:
         int: The age of the character.
     """
-    age_weights = [0.05, 0.1, 0.45, 0.2, 0.1, 0.05, 0.05]
+    age_weights = [0.07, 0.1, 0.43, 0.2, 0.1, 0.05, 0.05]
     age_choices = [
         random.randint(1, 13), random.randint(13, 17), random.randint(18, 35),
-        random.randint(36, 50), random.randint(50, 100), random.randint(101, 200),
-        random.randint(201, 500)
+        random.randint(36, 50), random.randint(50, 120), random.randint(121, 1000),
+        random.randint(1001, sys.maxsize)
     ]
     age = random.choices(age_choices, weights=age_weights)[0]
     return age
