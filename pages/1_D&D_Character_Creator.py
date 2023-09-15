@@ -125,95 +125,103 @@ def generate_portrait(prompt, character_name):
     
     return save_dalle_image_to_disk(image_url, filename, 1)
 
-
-def create_pdf_character_sheet(character, portrait_filenames):
-    """
-    Generate a PDF character sheet based on character data and save it locally.
-
-    Args:
-        character (dict): Dictionary containing character attributes.
-        portrait_filenames (list): List of portrait filenames for the character.
-
-    Returns:
-        str: The path to the saved PDF file.
-    """
+def create_pdf_character_sheet(character, portrait_filenames=[]):
     pdf = FPDF()
     pdf.add_page()
-
-    # Set Colors for fill
+    
+    # Set colors for headers and fills
+    header_color = (60, 60, 60)  # Dark gray
     fill_color = (220, 220, 220)  # Light gray
-
-    # Function to create section header
-    def add_section_header(title):
-        pdf.set_fill_color(*fill_color)
-        pdf.set_font("Arial", 'B', 18)
+    
+    # Define fonts
+    header_font = ("Arial", 'B', 18)
+    sub_header_font = ("Arial", 'B', 14)
+    label_font = ("Arial", 'B', 12)
+    value_font = ("Arial", '', 12)
+    
+    # Function to add a section header
+    def add_section_header(title, y_offset=None):
+        if y_offset:
+            pdf.ln(y_offset)
+        pdf.set_fill_color(*header_color)
+        pdf.set_font(*header_font)
         pdf.cell(0, 10, txt=title, ln=True, fill=True, align='L')
-
-    # Function to add key-value pair
-    def add_key_value(key, value, w1=90, w2=90):
-        pdf.set_font("Arial", size=12)
-        pdf.cell(w1, 10, txt=f"{key.replace('_', ' ').capitalize()}:", align='R')
-        pdf.multi_cell(w2, 10, txt=f"{value}", align='L')
-
-    # Title: Character Name
+    
+    # Function to add a sub-section header
+    def add_sub_section_header(title):
+        pdf.set_fill_color(*fill_color)
+        pdf.set_font(*sub_header_font)
+        pdf.cell(0, 10, txt=title, ln=True, fill=True, align='L')
+    
+    # Function to add key-value pairs with multi_cell for text wrapping
+    def add_key_value(key, value, w1=45, w2=45, ln=False):
+        pdf.set_font(*label_font)
+        pdf.cell(w1, 8, txt=f"{key.replace('_', ' ').capitalize()}:", align='R')
+        pdf.set_font(*value_font)
+        current_y = pdf.get_y()
+        current_x = pdf.get_x()
+        pdf.multi_cell(w2, 8, txt=f"{value}")
+        if not ln:
+            pdf.set_xy(current_x + w2, current_y)
+    
+    # Character Name as Header
     pdf.set_font("Arial", 'B', 24)
     pdf.cell(0, 20, txt=character['name'], ln=True, align='C')
-
+    
     # Basic Info
     add_section_header("Basic Info")
     basic_info_keys = ['level', 'pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age', 'description', 'height', 'weight', 'eyes', 'skin', 'hair', 'experience_points']
-    for key in basic_info_keys:
-        add_key_value(key, character[key])
-
-    # Character Stats (in two columns)
-    add_section_header("Character Stats")
-    stats_keys_left = ['armor_class', 'hit_points', 'speed', 'strength', 'dexterity', 'constitution']
-    stats_keys_right = ['intelligence', 'wisdom', 'charisma', 'passive_wisdom_perception', 'inspiration', 'proficiency_bonus']
-    for key_left, key_right in zip(stats_keys_left, stats_keys_right):
-        add_key_value(key_left, character[key_left], 60, 60)
-        add_key_value(key_right, character[key_right], 60, 60)
-
+    for idx, key in enumerate(basic_info_keys):
+        add_key_value(key, character[key], ln=(idx % 2 != 0))
+    
+    # Character Stats
+    add_section_header("Character Stats", y_offset=10)
+    stats_keys = ['armor_class', 'hit_points', 'speed', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma', 'passive_wisdom_perception', 'inspiration', 'proficiency_bonus']
+    for idx, key in enumerate(stats_keys):
+        add_key_value(key, character[key], ln=(idx % 2 != 0))
+    
     # Saving Throws & Skills
-    add_section_header("Saving Throws & Skills")
+    add_section_header("Saving Throws & Skills", y_offset=10)
     throws_keys = ['strength_save', 'dexterity_save', 'constitution_save', 'intelligence_save', 'wisdom_save', 'charisma_save']
-    for key in throws_keys:
-        add_key_value(key, character[key])
-
+    for idx, key in enumerate(throws_keys):
+        add_key_value(key, character[key], ln=(idx % 2 != 0))
+    
     # Skills
+    add_sub_section_header("Skills")
     skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
-    for skill in skills_list:
+    for idx, skill in enumerate(skills_list):
         skill_key = f"skills_{skill.lower().replace(' ', '_')}"
-        add_key_value(skill, character[skill_key], w1=50, w2=140)
-
+        add_key_value(skill, character[skill_key], w1=60, w2=60, ln=(idx % 2 != 0))
+    
     # Proficiencies & Languages
-    add_section_header("Proficiencies & Languages")
-    add_key_value("Languages", character['languages'], w1=50, w2=140)
+    add_section_header("Proficiencies & Languages", y_offset=10)
+    add_key_value("Languages", character['languages'], w1=50, w2=140, ln=True)
     add_key_value("Proficiencies", character['proficiencies'], w1=50, w2=140)
-
+    
     # Character Traits
-    add_section_header("Character Traits")
+    add_section_header("Character Traits", y_offset=10)
     trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws', 'character_appearance', 'character_backstory']
     for key in trait_keys:
-        add_key_value(key, character[key], w1=50, w2=140)
-
+        add_key_value(key, character[key], w1=80, w2=110, ln=True)
+    
     # Additional Features & Traits
-    add_section_header("Additional Features & Traits")
-    add_key_value("Features", character['features_traits'], w1=50, w2=140)
-    add_key_value("Additional Features", character['additional_features_traits'], w1=50, w2=140)
-
+    add_section_header("Additional Features & Traits", y_offset=10)
+    add_key_value("Features", character['features_traits'], w1=80, w2=110, ln=True)
+    add_key_value("Additional Features", character['additional_features_traits'], w1=80, w2=110)
+    
     # Equipment & Treasure
-    add_section_header("Equipment & Treasure")
-    add_key_value("Equipment", character['equipment'], w1=50, w2=140)
-    add_key_value("Treasure", character['treasure'], w1=50, w2=140)
-
+    add_section_header("Equipment & Treasure", y_offset=10)
+    add_key_value("Equipment", character['equipment'], w1=80, w2=110, ln=True)
+    add_key_value("Treasure", character['treasure'], w1=80, w2=110)
+    
     # Attacks & Spellcasting
-    add_section_header("Attacks & Spellcasting")
-    add_key_value("Attacks & Spellcasting details", character['attacks_spellcasting'], w1=100, w2=90)
-    add_key_value("Spellcasting Class", character['spellcasting_class'], w1=90, w2=100)
-    add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=90, w2=100)
-    add_key_value("Spell Save DC", character['spell_save_dc'], w1=90, w2=100)
-    add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=90, w2=100)
-
+    add_section_header("Attacks & Spellcasting", y_offset=10)
+    add_key_value("Details", character['attacks_spellcasting'], w1=80, w2=110, ln=True)
+    add_key_value("Spellcasting Class", character['spellcasting_class'], w1=80, w2=110)
+    add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=80, w2=110, ln=True)
+    add_key_value("Spell Save DC", character['spell_save_dc'], w1=80, w2=110, ln=True)
+    add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=80, w2=110, ln=True)
+    
     # Portraits
     for filename in portrait_filenames:
         try:
@@ -221,15 +229,14 @@ def create_pdf_character_sheet(character, portrait_filenames):
             pdf.image(filename, x=10, y=None, w=90)
             pdf.ln(5)
         except Exception as e:
-            st.warning(f"Error adding image {filename} to PDF: {e}")
-
+            print(f"Error adding image {filename} to PDF: {e}")
+    
     # Footer with page number
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.alias_nb_pages()
     pdf.set_font("Arial", 'I', 8)
     pdf.cell(0, 10, 'Page ' + str(pdf.page_no()) + '/{nb}', 0, 0, 'C')
-
-    # Assuming CHARACTER_SHEET_DIRECTORY is a defined constant somewhere in your code
+    
     pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}_{uuid4()}.pdf")
     pdf.output(pdf_file_path)
 
