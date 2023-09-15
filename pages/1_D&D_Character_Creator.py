@@ -70,10 +70,10 @@ def get_character_data(character):
     examples = get_character_examples()
     messages=[
         {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
+        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely, leaving no empty values. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable with D&D 5e rules. Also include a portrait_prompt value we can pass to DALLE to create a character portrait."},
         {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
-        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely, leaving no empty values. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable. Also include a portrait_prompt value we can pass to dalle to create a character portrait."},
+        {"role": "user", "content": "Please completely fill in the JSON data for the following character sheet based on the provided character sheet examples.  Do not copy the examples. Use proper JSON formatting for your response.  Don't leave any values blank in the new character sheet.  Make the generated character is unique. Make sure facts about the character are consistent across the generated character sheet JSON, and follow D&D 5e rules.  Make sure all stats make sense for the character and are filled out. Don't change any values from the given character sheet unless they're empty or a clear placeholder. All character sheet values should be formatted as text strings.  Impress me."},
         {"role": "user", "content": f"{json.dumps(character)}"},
-        {"role": "user", "content": "Please completely fill in the JSON data for the character sheet based on the provided character sheet. Use proper JSON formatting for your response.  Don't leave any values blank.  Make the generated character is unique. Make sure facts about the character are consistent across the generated character sheet JSON.  Make sure all stats make sense for the character and are filled out. Don't change any values from the given character sheet. All character sheet values should be formatted as text strings.  Impress me."},
     ]
     print(f"Messages: {messages}")
     response = openai.ChatCompletion.create(
@@ -182,7 +182,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
     # Skills
     skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
     for skill in skills_list:
-        skill_key = skill.lower().replace(' ', '_')
+        skill_key = f"skills_{skill.lower().replace(' ', '_')}"
         add_key_value(skill, character[skill_key], w1=50, w2=140)
 
     # Proficiencies & Languages
@@ -347,7 +347,7 @@ def build_form(character):
             cols = st.columns(4)
             skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
             for idx, skill in enumerate(skills_list):
-                character[skill.lower().replace(' ', '_')] = cols[idx % 4].text_input(skill, character.get(skill.lower().replace(' ', '_'), ''), key=f'skills_{skill.replace(" ", "_").lower()}_input')
+                character[f"skills_{skill.lower().replace(' ', '_')}"] = cols[idx % 4].text_input(skill, character.get(f"skills_{skill.lower().replace(' ', '_')}", ''), key=f"skills_{skill.replace(' ', '_').lower()}_input")
 
         # Character Traits
         with st.expander("Character Traits"):
