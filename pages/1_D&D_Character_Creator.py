@@ -518,14 +518,16 @@ def main():
                 character['class'] = random.choice(CLASS_LIST)
                 character['race'] = random.choice(RACE_LIST)
 
-            try:
-                # Get character data from API
-                generated_data = get_character_data(character)
-                for key, value in generated_data.items():
-                    character[key] = value
-            except Exception as e:
-                st.error(f"Error generating character data: {str(e)}")
-                return
+            # Check if all values are filled in
+            if not all(value != "" for value in character.values()):
+                try:
+                    # Get character data from API
+                    generated_data = get_character_data(character)
+                    for key, value in generated_data.items():
+                        character[key] = value
+                except Exception as e:
+                    st.error(f"Error generating character data: {str(e)}")
+                    return
 
         with st.spinner('Generating PDF character sheet...'):
             try:
