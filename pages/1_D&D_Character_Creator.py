@@ -277,6 +277,16 @@ def build_form(character):
     Returns:
         form: The Streamlit form object containing all the character input fields.
     """
+    # If there's a valid PDF path in the session state, display the download button
+    if 'pdf_path' in st.session_state and st.session_state.pdf_path:
+        with open(st.session_state.pdf_path, 'rb') as file:
+            btn = st.download_button(
+                label="Download Character Sheet PDF",
+                data=file,
+                file_name=f"{character['name'].replace(' ', '_')}.pdf",
+                mime="application/pdf"
+            )
+
     form = st.form(key='character_form', clear_on_submit=True)
 
     with form:
@@ -395,16 +405,6 @@ def build_form(character):
         # Treasure
         with st.expander("Treasure"):
             character['treasure'] = st.text_area("Details", character.get('treasure', ''), key='treasure_details_input')
-
-    # If there's a valid PDF path in the session state, display the download button
-    if 'pdf_path' in st.session_state and st.session_state.pdf_path:
-        with open(st.session_state.pdf_path, 'rb') as file:
-            btn = st.download_button(
-                label="Download Character Sheet PDF",
-                data=file,
-                file_name=f"{character['name'].replace(' ', '_')}.pdf",
-                mime="application/pdf"
-            )
 
     return form
 
