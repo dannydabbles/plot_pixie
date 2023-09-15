@@ -86,7 +86,7 @@ def get_character_data(character):
         messages.append({"role": "user", "content": "Now, generate a new character sheet for me."})
         messages.append({"role": "assistant", "content": f"{json.dumps(example)}"})
 
-    messages.append({"role": "user", "content": f"Now, complete this unrelated character sheet for me.  Only return valid JSON.\n\n{json.dumps(character)}"})
+    messages.append({"role": "user", "content": f"Now, complete this random unrelated character sheet for me.  Only return valid JSON.\n\n{json.dumps(character)}"})
 
     print(f"Messages: {json.dumps(messages)}")
     response = openai.ChatCompletion.create(
@@ -181,10 +181,19 @@ def create_pdf_character_sheet(character, portrait_filenames=[]):
     # Character Name as Header
     pdf.set_font("Arial", 'B', 24)
     pdf.cell(0, 20, txt=character['name'], ln=True, align='C')
+
+    # Character level as sub-header
+    pdf.set_font("Arial", 'B', 18)
+    pdf.cell(0, 10, txt=character['name'], ln=True, align='C')
+
+    # Separate description to handle spacing and wrapping properly
+    description = character["description"]
+    description_height = len(description) / 72 + 1
+    add_key_value("description", character["description"], w1=50, w2=140, ln=True) 
     
     # Basic Info
     add_section_header("Basic Info")
-    basic_info_keys = ['level', 'pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age', 'description', 'height', 'weight', 'eyes', 'skin', 'hair', 'experience_points']
+    basic_info_keys = ['level', 'pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age', 'height', 'weight', 'eyes', 'skin', 'hair', 'experience_points']
     for idx, key in enumerate(basic_info_keys):
         add_key_value(key, character[key], ln=(idx % 2 != 0))
     
@@ -205,7 +214,7 @@ def create_pdf_character_sheet(character, portrait_filenames=[]):
     skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
     for idx, skill in enumerate(skills_list):
         skill_key = f"skills_{skill.lower().replace(' ', '_')}"
-        add_key_value(skill, character[skill_key], w1=60, w2=60, ln=(idx % 2 != 0))
+        add_key_value(skill, character[skill_key], ln=(idx % 2 != 0))
     
     # Proficiencies & Languages
     add_section_header("Proficiencies & Languages", y_offset=10)
