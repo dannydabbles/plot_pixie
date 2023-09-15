@@ -125,6 +125,7 @@ def generate_portrait(prompt, character_name):
     
     return save_dalle_image_to_disk(image_url, filename, 1)
 
+
 def create_pdf_character_sheet(character, portrait_filenames):
     """
     Generate a PDF character sheet based on character data and save it locally.
@@ -160,15 +161,14 @@ def create_pdf_character_sheet(character, portrait_filenames):
 
     # Basic Info
     add_section_header("Basic Info")
-    pdf.ln(5)
-    basic_info_keys = ['level', 'pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age', 'description']
+    basic_info_keys = ['level', 'pronouns', 'orientation', 'race', 'class', 'alignment', 'background', 'age', 'description', 'height', 'weight', 'eyes', 'skin', 'hair', 'experience_points']
     for key in basic_info_keys:
         add_key_value(key, character[key])
 
     # Character Stats (in two columns)
     add_section_header("Character Stats")
     stats_keys_left = ['armor_class', 'hit_points', 'speed', 'strength', 'dexterity', 'constitution']
-    stats_keys_right = ['intelligence', 'wisdom', 'charisma', 'passive_wisdom', 'inspiration', 'proficiency_bonus']
+    stats_keys_right = ['intelligence', 'wisdom', 'charisma', 'passive_wisdom_perception', 'inspiration', 'proficiency_bonus']
     for key_left, key_right in zip(stats_keys_left, stats_keys_right):
         add_key_value(key_left, character[key_left], 60, 60)
         add_key_value(key_right, character[key_right], 60, 60)
@@ -178,7 +178,12 @@ def create_pdf_character_sheet(character, portrait_filenames):
     throws_keys = ['strength_save', 'dexterity_save', 'constitution_save', 'intelligence_save', 'wisdom_save', 'charisma_save']
     for key in throws_keys:
         add_key_value(key, character[key])
-    add_key_value("Skills", character['skills'], w1=50, w2=140)
+
+    # Skills
+    skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
+    for skill in skills_list:
+        skill_key = skill.lower().replace(' ', '_')
+        add_key_value(skill, character[skill_key], w1=50, w2=140)
 
     # Proficiencies & Languages
     add_section_header("Proficiencies & Languages")
@@ -187,7 +192,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
 
     # Character Traits
     add_section_header("Character Traits")
-    trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws']
+    trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws', 'character_appearance', 'character_backstory']
     for key in trait_keys:
         add_key_value(key, character[key], w1=50, w2=140)
 
@@ -203,6 +208,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
 
     # Attacks & Spellcasting
     add_section_header("Attacks & Spellcasting")
+    add_key_value("Attacks & Spellcasting details", character['attacks_spellcasting'], w1=100, w2=90)
     add_key_value("Spellcasting Class", character['spellcasting_class'], w1=90, w2=100)
     add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=90, w2=100)
     add_key_value("Spell Save DC", character['spell_save_dc'], w1=90, w2=100)
@@ -223,6 +229,7 @@ def create_pdf_character_sheet(character, portrait_filenames):
     pdf.set_font("Arial", 'I', 8)
     pdf.cell(0, 10, 'Page ' + str(pdf.page_no()) + '/{nb}', 0, 0, 'C')
 
+    # Assuming CHARACTER_SHEET_DIRECTORY is a defined constant somewhere in your code
     pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}_{uuid4()}.pdf")
     pdf.output(pdf_file_path)
 
@@ -276,9 +283,6 @@ def build_form(character):
         if 'portrait_filenames' in st.session_state and st.session_state.portrait_filenames:
             for filename in st.session_state.portrait_filenames:
                 st.image(filename, caption=f"Portrait of {character['name']}", use_column_width=True)
-        # If there's a valid PDF path in the session state, display the download button
-        if 'pdf_path' in st.session_state and st.session_state.pdf_path:
-            st.markdown(f"[Download Character Sheet PDF]({st.session_state.pdf_path})")
 
         # Level, Name, Description
         character['level'] = st.text_input("Level", character.get('level', ''))
@@ -391,6 +395,16 @@ def build_form(character):
         # Treasure
         with st.expander("Treasure"):
             character['treasure'] = st.text_area("Details", character.get('treasure', ''), key='treasure_details_input')
+
+    # If there's a valid PDF path in the session state, display the download button
+    if 'pdf_path' in st.session_state and st.session_state.pdf_path:
+        with open(st.session_state.pdf_path, 'rb') as file:
+            btn = st.download_button(
+                label="Download Character Sheet PDF",
+                data=file,
+                file_name=f"{character['name'].replace(' ', '_')}.pdf",
+                mime="application/pdf"
+            )
 
     return form
 
