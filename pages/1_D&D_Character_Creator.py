@@ -544,8 +544,11 @@ def main():
                         st.write("No portrait prompt provided. Skipping portrait generation.")
                         continue
 
-                    with st.spinner('Generating character portrait...'):
-                        st.session_state.portrait_filenames.append(generate_portrait(portrait_prompt, character['name']))
+                    try:
+                        with st.spinner('Generating character portrait...'):
+                            st.session_state.portrait_filenames.append(generate_portrait(portrait_prompt, character['name']))
+                    except Exception as e:
+                        st.error(f"Error generating portrait: {str(e)}")
 
                 # Create PDF character sheet and save
                 pdf_filename = create_pdf_character_sheet(character, st.session_state.portrait_filenames)
