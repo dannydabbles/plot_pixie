@@ -86,7 +86,7 @@ def get_character_data(character):
         messages.append({"role": "user", "content": "Now, generate a new character sheet for me."})
         messages.append({"role": "assistant", "content": f"{json.dumps(example)}"})
 
-    messages.append({"role": "user", "content": "Now, complete this unrelated character sheet for me.  Only return valid JSON.\n\n{json.dumps(character)}"})
+    messages.append({"role": "user", "content": f"Now, complete this unrelated character sheet for me.  Only return valid JSON.\n\n{json.dumps(character)}"})
 
     print(f"Messages: {json.dumps(messages)}")
     response = openai.ChatCompletion.create(
