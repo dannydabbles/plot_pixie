@@ -28,6 +28,58 @@ os.makedirs(CHARACTER_SHEET_DIRECTORY, exist_ok=True)
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
 # List options
+CLASS_LIST = [
+    "Barbarian",
+    "Bard",
+    "Cleric",
+    "Druid",
+    "Fighter",
+    "Monk",
+    "Paladin",
+    "Ranger",
+    "Rogue",
+    "Sorcerer",
+    "Warlock",
+    "Wizard"
+]
+RACE_LIST = [
+    "Dragonborn",
+    "Dwarf",
+    "Elf",
+    "Gnome",
+    "Half-Elf",
+    "Half-Orc",
+    "Halfling",
+    "Human",
+    "Tiefling",
+    "Aarakocra",
+    "Aasimar",
+    "Bugbear",
+    "Firbolg",
+    "Goblin",
+    "Goliath",
+    "Hobgoblin",
+    "Kenku",
+    "Kobold",
+    "Lizardfolk",
+    "Orc",
+    "Tabaxi",
+    "Triton",
+    "Yuan-ti Pureblood",
+    "Genasi",
+    "Changeling",
+    "Kalashtar",
+    "Shifter",
+    "Warforged",
+    "Centaur",
+    "Loxodon",
+    "Minotaur",
+    "Simic Hybrid",
+    "Vedalken",
+    "Verdan",
+    "Leonin",
+    "Satyr"
+]
 
 def get_character_age():
     """
@@ -275,6 +327,7 @@ def default_character():
             default_character[key] = []
         else:
             default_character[key] = ""
+
     return default_character
 
 # Set the page configuration at the very top of the script
@@ -457,6 +510,13 @@ def main():
         save_button_placeholder = st.empty()
 
         with st.spinner('Generating character data...'):
+            # If all values are empty, set some random defaults
+            if all(value == "" for value in character.values()):
+                character['age'] = get_character_age()
+                character['level'] = random.randint(1, 20)
+                character['class'] = random.choice(CLASS_LIST)
+                character['race'] = random.choice(RACE_LIST)
+
             try:
                 # Get character data from API
                 generated_data = get_character_data(character)
