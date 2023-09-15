@@ -68,19 +68,33 @@ def get_character_data(character):
         str: Generated character description.
     """
     examples = get_character_examples()
+
+    print(f"Examples: {json.dumps(examples)}")
+
     messages=[
-        {"role": "system", "content": "You are a helpful dungeon master's assistant. You are helping a user fill in their D&D character sheet."},
-        {"role": "system", "content": "The user will provide an incomplete JSON character sheet. Your job will be to fill it out completely, leaving no empty values. Feel free to take artistic licence with all character details, but make sure the character sheet is logically consistent and the character is playable with D&D 5e rules. Also include a portrait_prompt value we can pass to DALLE to create a character portrait."},
-        {"role": "system", "content": f"Here are some example character sheets:\n\n{json.dumps(examples)}"},
-        {"role": "user", "content": "Please completely fill in the JSON data for the following character sheet based on the provided character sheet examples.  Do not copy the examples. Use proper JSON formatting for your response.  Don't leave any values blank in the new character sheet.  Make the generated character is unique. Make sure facts about the character are consistent across the generated character sheet JSON, and follow D&D 5e rules.  Make sure all stats make sense for the character and are filled out. Don't change any values from the given character sheet unless they're empty or a clear placeholder. All character sheet values should be formatted as text strings.  Impress me."},
-        {"role": "user", "content": f"{json.dumps(character)}"},
+    {"role": "system", "content": "You are a dedicated assistant for dungeon masters. Your current task is to assist with filling out D&D character sheets."},
+    {"role": "system", "content": "The user may give you an incomplete character sheet in JSON format. You must complete it, ensuring there are no empty values. Infuse the character with unique details, but make sure it remains playable within D&D 5e rules. Additionally, provide a 'portrait_prompt' for creating a character portrait using DALLE."},
+    {"role": "system", "content": f"Here is an example character sheet for reference:\n\n{json.dumps(examples[0])}"},
+    {"role": "user", "content": "Help me generate or fill out D&D 5e character sheets. Retain any existing values unless they're obviously placeholders. Ensure the character's details are consistent, follow D&D 5e rules, and are formatted as text strings. Impress me."},
+    {"role": "assistant", "content": f"{json.dumps(examples[1])}"},
+    {"role": "user", "content": "That's an excellent start. Now, generate a new character sheet for me."},
+    {"role": "assistant", "content": f"{json.dumps(examples[2])}"}
     ]
-    print(f"Messages: {messages}")
+
+    # Loop through each character example as a user/asistant message pair
+    for example in examples[3:]:
+        messages.append({"role": "user", "content": "Now, generate a new character sheet for me."})
+        messages.append({"role": "assistant", "content": f"{json.dumps(example)}"})
+
+    messages.append({"role": "user", "content": "Now, complete this unrelated character sheet for me.  Only return valid JSON.\n\n{json.dumps(character)}"})
+
+    print(f"Messages: {json.dumps(messages)}")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-16k", messages=messages, max_tokens=MAX_TOKENS
-    ) 
+    )
+    print(f"Response: {json.dumps(response)}")
     result = json.loads(response.choices[0].message.content)
-    print(f"Result: {result}")
+    print(f"Result: {json.dumps(result)}")
     return result
 
 def save_dalle_image_to_disk(image_url, character_name, portrait_num):
