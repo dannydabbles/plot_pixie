@@ -534,8 +534,8 @@ def main():
                 st.session_state.portrait_filenames = []
 
                 # Generate portrait prompts and portrait
-                #num_portraits = st.slider("Number of Portraits", 1, 5)
                 num_portraits = 1
+                #num_portraits = st.slider("Number of Portraits", 1, 5)
                 for _ in range(num_portraits):
                     portrait_prompt = character.get("portrait_prompt", "")
 
