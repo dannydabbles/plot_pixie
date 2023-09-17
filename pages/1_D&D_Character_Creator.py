@@ -11,13 +11,11 @@ from uuid import uuid4
 from fpdf import FPDF
 from PIL import Image
 
-# Set OpenAI API Key
+# Set configuration variables
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-if not OPENAI_API_KEY:
-    raise ValueError("Missing OPENAI_API_KEY")
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_REGION_NAME = os.environ.get('AWS_REGION_NAME')  # Change to your region
+AWS_REGION_NAME = os.environ.get('AWS_REGION_NAME') 
 S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
 CLOUDFRONT_URL = os.environ.get('CLOUDFRONT_URL')
 
