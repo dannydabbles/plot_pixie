@@ -237,7 +237,7 @@ def generate_portrait(prompt, character_id, portrait_num):
     
     return save_dalle_image_to_s3(image_url, character_id, portrait_num)
 
-def create_pdf_character_sheet(character, portrait_filenames=[]):
+def create_pdf_character_sheet(character_id, character, portrait_filenames=[]):
     pdf = FPDF()
     pdf.add_page()
     
@@ -361,7 +361,15 @@ def create_pdf_character_sheet(character, portrait_filenames=[]):
     pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}_{uuid4()}.pdf")
     pdf.output(pdf_file_path)
 
-    return pdf_file_path
+    # Upload PDF to S3 and return the CloudFront URL
+    s3_key = f"sheets/{character_id}/{character['name']}.pdf"
+    s3_client.upload_file(pdf_file_path, S3_BUCKET_NAME, s3_key)
+    pdf_file_url = f"{CLOUDFRONT_URL}/{s3_key}"
+
+    # Clean up the PDF file
+    os.remove(pdf_file_path)
+
+    return pdf_file_url
 
 def default_character():
     # Grab an example character and clear out the values
@@ -407,14 +415,8 @@ def build_form(character):
         form: The Streamlit form object containing all the character input fields.
     """
     # If there's a valid PDF path in the session state, display the download button
-    if 'pdf_path' in st.session_state and st.session_state.pdf_path:
-        with open(st.session_state.pdf_path, 'rb') as file:
-            btn = st.download_button(
-                label="Download Character Sheet PDF",
-                data=file,
-                file_name=f"{character['name'].replace(' ', '_')}.pdf",
-                mime="application/pdf"
-            )
+    if 'pdf_url' in st.session_state and st.session_state.pdf_url:
+        st.markdown(f"Download your character sheet [here]({st.session_state.pdf_url})")
 
     form = st.form(key='character_form', clear_on_submit=True)
 
@@ -537,6 +539,22 @@ def build_form(character):
 
     return form
 
+def save_character_json_to_s3(character_id, character):
+    """
+    Saves the character JSON to S3.
+
+    Args:
+        character (dict): The character data to save.
+
+    Returns:
+        None
+    """
+    s3_key = f"sheets/{character_id}/{character['name']}.json"
+    character_data = character.copy()
+    character_data['id'] = character_id
+    character_json = json.dumps(character_data)
+    s3_client.put_object(Body=character_json, Bucket=S3_BUCKET_NAME, Key=s3_key)
+
 def main():
     """
     Main function for the Streamlit app.
@@ -598,13 +616,21 @@ def main():
                         st.error(f"Error generating portrait: {str(e)}")
 
                 # Create PDF character sheet and save
-                pdf_filename = create_pdf_character_sheet(character, st.session_state.portrait_filenames)
+                pdf_url = create_pdf_character_sheet(character_id, character, st.session_state.portrait_filenames)
 
                 # Save the path to the PDF in the session state
-                st.session_state.pdf_path = pdf_filename
+                st.session_state.pdf_url = pdf_url
 
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
+                return
+
+        # Save the character data to a JSON file
+        with st.spinner('Saving character data...'):
+            try:
+                save_character_json_to_s3(character_id, character)
+            except Exception as e:
+                st.error(f"Error saving character data: {str(e)}")
                 return
 
         st.session_state.character = character
