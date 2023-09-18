@@ -320,13 +320,13 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
         add_key_value(key, character[key], ln=(idx % 2 != 0))
     
     # Saving Throws & Skills
-    add_section_header("Saving Throws & Skills", y_offset=10)
+    add_section_header("Saving Throws", y_offset=10)
     throws_keys = ['strength_save', 'dexterity_save', 'constitution_save', 'intelligence_save', 'wisdom_save', 'charisma_save']
     for idx, key in enumerate(throws_keys):
         add_key_value(key, character[key], ln=(idx % 2 != 0))
     
     # Skills
-    add_sub_section_header("Skills")
+    add_section_header("Skills", y_offset=10)
     skills_list = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
     for idx, skill in enumerate(skills_list):
         skill_key = f"skills_{skill.lower().replace(' ', '_')}"
@@ -341,31 +341,25 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     add_section_header("Character Traits", y_offset=10)
     trait_keys = ['personality_traits', 'ideals', 'bonds', 'flaws', 'character_appearance', 'character_backstory']
     for key in trait_keys:
-        add_key_value(key, character[key], w1=80, w2=110, ln=True)
+        add_key_value(key, character[key], w1=50, w2=140, ln=True)
     
     # Additional Features & Traits
     add_section_header("Additional Features & Traits", y_offset=10)
-    add_key_value("Features", character['features_traits'], w1=80, w2=110, ln=True)
-    add_key_value("Additional Features", character['additional_features_traits'], w1=80, w2=110)
+    add_key_value("Features", character['features_traits'], w1=50, w2=140, ln=True)
+    add_key_value("Additional Features", character['additional_features_traits'], w1=50, w2=140)
     
     # Equipment & Treasure
     add_section_header("Equipment & Treasure", y_offset=10)
-    add_key_value("Equipment", character['equipment'], w1=80, w2=110, ln=True)
-    add_key_value("Treasure", character['treasure'], w1=80, w2=110)
+    add_key_value("Equipment", character['equipment'], w1=50, w2=140, ln=True)
+    add_key_value("Treasure", character['treasure'], w1=50, w2=140, ln=True)
     
     # Attacks & Spellcasting
     add_section_header("Attacks & Spellcasting", y_offset=10)
-    add_key_value("Details", character['attacks_spellcasting'], w1=80, w2=110, ln=True)
-    add_key_value("Spellcasting Class", character['spellcasting_class'], w1=80, w2=110)
-    add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=80, w2=110, ln=True)
-    add_key_value("Spell Save DC", character['spell_save_dc'], w1=80, w2=110, ln=True)
-    add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=80, w2=110, ln=True)
-    
-   # Footer with page number
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.alias_nb_pages()
-    pdf.set_font("Arial", 'I', 8)
-    pdf.cell(0, 10, 'Page ' + str(pdf.page_no()) + '/{nb}', 0, 0, 'C')
+    add_key_value("Details", character['attacks_spellcasting'], w1=50, w2=140, ln=True)
+    add_key_value("Spellcasting Class", character['spellcasting_class'], w1=50, w2=140, ln=True)
+    add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=50, w2=140, ln=True)
+    add_key_value("Spell Save DC", character['spell_save_dc'], w1=50, w2=140, ln=True)
+    add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=50, w2=140, ln=True)
     
     pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}_{uuid4()}.pdf")
     pdf.output(pdf_file_path)
