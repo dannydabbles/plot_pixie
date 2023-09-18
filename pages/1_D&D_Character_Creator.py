@@ -278,10 +278,16 @@ def create_pdf_character_sheet(character_id, character, portrait_filenames=[]):
     pdf.set_font("Arial", 'B', 24)
     pdf.cell(0, 20, txt=character['name'], ln=True, align='C')
 
-    # Character level as sub-header
-    pdf.set_font("Arial", 'B', 18)
-    pdf.cell(0, 10, txt=character['name'], ln=True, align='C')
-
+    # Portraits
+    for filename in portrait_filenames:
+        try:
+            pdf.ln(10)
+            # Show the image centered
+            pdf.image(filename, x=60, y=None, w=90)
+            pdf.ln(5)
+        except Exception as e:
+            print(f"Error adding image {filename} to PDF: {e}")
+    
     # Separate description to handle spacing and wrapping properly
     description = character["description"]
     description_height = len(description) / 72 + 1
@@ -341,16 +347,7 @@ def create_pdf_character_sheet(character_id, character, portrait_filenames=[]):
     add_key_value("Spell Save DC", character['spell_save_dc'], w1=80, w2=110, ln=True)
     add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=80, w2=110, ln=True)
     
-    # Portraits
-    for filename in portrait_filenames:
-        try:
-            pdf.ln(10)
-            pdf.image(filename, x=10, y=None, w=90)
-            pdf.ln(5)
-        except Exception as e:
-            print(f"Error adding image {filename} to PDF: {e}")
-    
-    # Footer with page number
+   # Footer with page number
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.alias_nb_pages()
     pdf.set_font("Arial", 'I', 8)
@@ -614,7 +611,7 @@ def main():
                         st.error(f"Error generating portrait: {str(e)}")
 
                 # Create PDF character sheet and save
-                pdf_url = create_pdf_character_sheet(character_id, character, st.session_state.portrait_filenames)
+                pdf_url = create_pdf_character_sheet(character_id, character, st.session_state.portrait_filenames).replace(" ", "%20")
 
                 # Save the path to the PDF in the session state
                 st.session_state.pdf_url = pdf_url
