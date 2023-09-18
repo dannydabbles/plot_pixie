@@ -255,7 +255,7 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     pdf.add_page()
     
     # Set colors for headers and fills
-    header_color = (60, 60, 60)  # Dark gray
+    header_color = (100, 100, 100)  # Dark gray
     fill_color = (220, 220, 220)  # Light gray
     
     # Define fonts
