@@ -168,9 +168,9 @@ def get_character_data(character: dict) -> str:
 
     messages=[
     {"role": "system", "content": "You are a dedicated assistant for dungeon masters. Your current task is to assist with filling out D&D character sheets."},
-    {"role": "system", "content": "The user may give you an incomplete character sheet in JSON format. You must complete it, ensuring there are no empty values. Infuse the character with unique details, but make sure it remains playable within D&D 5e rules. Additionally, provide a 'portrait_prompt' for creating a character portrait using DALLE."},
+    {"role": "system", "content": "The user may give you an incomplete character sheet in JSON format. You must complete it, ensuring there are no empty values for any known key. Infuse the character with unique details, but make sure it remains playable within D&D 5e rules. Additionally, provide a 'portrait_prompt' for creating a character portrait using DALLE."},
     {"role": "system", "content": f"Here is an example character sheet for reference:\n\n{json.dumps(examples[0])}"},
-    {"role": "user", "content": "Help me generate or fill out D&D 5e character sheets. Retain any existing values unless they're obviously placeholders. Ensure the character's details are consistent, follow D&D 5e rules, and are formatted as text strings. Impress me."},
+    {"role": "user", "content": "Help me generate or fill out D&D 5e character sheets. Retain any existing non-empty values without modification, especially: age, level, class, and race. Ensure the character's details are consistent, follow D&D 5e rules, and are formatted as text strings. Impress me and follow my lead."},
     {"role": "assistant", "content": f"{json.dumps(examples[1])}"},
     {"role": "user", "content": "That's an excellent start. Now, generate a new character sheet for me."},
     {"role": "assistant", "content": f"{json.dumps(examples[2])}"}
@@ -351,7 +351,7 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     # Equipment & Treasure
     add_section_header("Equipment & Treasure", y_offset=10)
     add_key_value("Equipment", character['equipment'], w1=50, w2=140, ln=True)
-    add_key_value("Treasure", character['treasure'], w1=50, w2=140, ln=True)
+    add_key_value("Treasure", character['treasure'], w1=50, w2=140)
     
     # Attacks & Spellcasting
     add_section_header("Attacks & Spellcasting", y_offset=10)
@@ -360,6 +360,14 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     add_key_value("Spellcasting Ability", character['spellcasting_ability'], w1=50, w2=140, ln=True)
     add_key_value("Spell Save DC", character['spell_save_dc'], w1=50, w2=140, ln=True)
     add_key_value("Spell Attack Bonus", character['spell_attack_bonus'], w1=50, w2=140, ln=True)
+
+    # Spells Known
+    add_section_header("Spells Known", y_offset=10)
+    for level in range(1, 10):
+        spells_text = character[f'{level}_level_spells']
+        if not spells_text:
+            spells_text = "N/A"
+        add_key_value(f"{level} Level Spells", character[f'{level}_level_spells'], w1=50, w2=140, ln=True)
     
     pdf_file_path = os.path.join(CHARACTER_SHEET_DIRECTORY, f"{character['name'].replace(' ', '_')}_{uuid4()}.pdf")
     pdf.output(pdf_file_path)
@@ -664,9 +672,41 @@ def validate_character_sheet(character: dict) -> tuple:
     # (This can be expanded to consider equipment, spells, etc.)
     if not 10 <= int(character['armor_class']) <= 30:
         return False, f"Invalid Armor Class: {character['armor_class']}"
+
+    # Check if any X_level_spell keys have an empty value
+    for key in character.keys():
+        if key.endswith("_level_spells") and character[key] == "":
+            character[key] = "N/A"
+
+    # Check if spell stats are empty
+    if character['spell_save_dc'] == "":
+        character['spell_save_dc'] = "N/A"
+    if character['spellcasting_class'] == "":
+        character['spellcasting_class'] = "N/A"
+    if character['spellcasting_ability'] == "":
+        character['spellcasting_ability'] = "N/A"
+    if character['spell_attack_bonus'] == "":
+        character['spell_attack_bonus'] = "N/A"
+
+    # Return false if any fields have empty values
+    for key in character.keys():
+        if character[key] == "":
+            return False, f"Empty value for {key}"
     
     # If all checks pass
     return True, "Character sheet is valid!"
+
+def fix_character_sheet(character: dict) -> dict:
+    """
+    Attempt to fix a character sheet that is invalid.
+
+    Args:
+        character (dict): The character data.
+
+    Returns:
+        dict: The character data with fixed values.
+    """
+
 
 def main():
     """
@@ -687,31 +727,48 @@ def main():
         save_button_placeholder = st.empty()
 
         with st.spinner('Generating character data...'):
-            # If all values are empty, set some random defaults
-            if all(value == "" for value in character.values()):
-                character['age'] = get_character_age()
-                character['level'] = random.randint(1, 20)
-                character['class'] = random.choice(CLASS_LIST)
-                character['race'] = random.choice(RACE_LIST)
+            main_keys = ["age", "level", "class", "race"]
+            
+            all_fields_empty = all(value == "" for value in character.values())
+            all_main_fields_empty = all(character[key] == "" for key in main_keys)
+            some_main_fields_empty = any(character[key] == "" for key in main_keys)
+            some_non_main_fields_empty = any(character[key] != "" for key in character.keys() if key not in main_keys)
+            all_non_main_fields_empty = all(character[key] == "" for key in character.keys() if key not in main_keys)
 
-            # Check if all values are filled in
+            # If any of the main keys are empty, set some random defaults
+            if all_fields_empty or (some_main_fields_empty and all_non_main_fields_empty):
+                for key in main_keys:
+                    if character[key] == "":
+                        if key == "age":
+                            character[key] = get_character_age()
+                        elif key == "level":
+                            character[key] = random.randint(1, 20)
+                        elif key == "class":
+                            character[key] = random.choice(CLASS_LIST)
+                        elif key == "race":
+                            character[key] = random.choice(RACE_LIST)
+
+            # Generate the character if any data is missing
             if not all(value != "" for value in character.values()):
+                # Retry once if something breaks
+                rabbit_hole_depth = 2
                 try:
-                    # Get character data from API
-                    generated_data = get_character_data(character)
-                    for key, value in generated_data.items():
-                        character[key] = value
+                    for idx in range(rabbit_hole_depth):
+                        # Get character data from API, then munge and validate it
+                        character = get_character_data(character)
+                        character = generate_character_sheet_stats(character)
+                        valid, error_message = validate_character_sheet(character)
+                        if valid:
+                            continue
+                        # If we've already tried to fix the character sheet
+                        elif idx == rabbit_hole_depth - 1:
+                            st.error(f"Error validating character sheet: {error_message}")
+                            return
                 except Exception as e:
                     st.error(f"Error generating character data: {str(e)}")
                     return
 
-        # Fix and validate the character
-        character = generate_character_sheet_stats(character)
-        valid, error_message = validate_character_sheet(character)
-        if not valid:
-            st.error(f"Character sheet is invalid: {error_message}")
-            return
-
+        # Generate the character ID
         character_id = character_name_to_id(character['name'])
 
         with st.spinner('Generating PDF character sheet...'):
@@ -720,7 +777,8 @@ def main():
 
                 # Generate portrait prompts and portrait
                 num_portraits = 1
-                #num_portraits = st.slider("Number of Portraits", 1, 5)
+                # TODO: Add slider for number of portraits maybe?
+                # num_portraits = st.slider("Number of Portraits", 1, 5)
                 for portrait_num in range(num_portraits):
                     portrait_prompt = character.get("portrait_prompt", "")
 
