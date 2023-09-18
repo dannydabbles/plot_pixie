@@ -426,7 +426,7 @@ def build_form(character: dict) -> st.form:
                           the dictionary in-place based on user input.
 
     Returns:
-        form: The Streamlit form object containing all the character input fields.
+        st.form: The Streamlit form object containing all the character input fields.
     """
     # If there's a valid PDF path in the session state, display the download button
     if 'pdf_url' in st.session_state and st.session_state.pdf_url:
