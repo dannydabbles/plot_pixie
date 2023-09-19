@@ -100,8 +100,8 @@ st.set_page_config(page_title="D&D Character Creator", page_icon="🐉")
 st.sidebar.title("D&D Character Creator 🐉")
 st.sidebar.write("Your AI D&D Character Creator.")
 
-st.write("# Welcome to D&D Character Creator! 🐉")
-
+st.write("# D&D Character Creator! 🐉")
+st.write("###### *Note: Character generation can take 60+ seconds after submit.  Please be patient.*")
 
 def character_name_to_id(character_name: str) -> str:
     """
@@ -351,7 +351,7 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     # Additional Features & Traits
     add_section_header("Additional Features & Traits", y_offset=10)
     add_key_value("Features", character['features_traits'], w1=50, w2=140, ln=True)
-    add_key_value("Additional Features", character['additional_features_traits'], w1=50, w2=140)
+    add_key_value("Additional Features", character['additional_features_traits'], w1=50, w2=140, ln=True)
     
     # Equipment & Treasure
     add_section_header("Equipment & Treasure", y_offset=10)
@@ -714,9 +714,8 @@ def main():
     """
     Main function for the D&D Character Creator app.
     """
-    st.markdown("# D&D Character Creator")
 
-    with st.expander("How to Use the App: A Poem"):
+    with st.expander("How to Use the D&D Character Creator: A Poem"):
         st.markdown("""
         *Fill what you like,*  
         *or leave a space,*  
@@ -749,6 +748,8 @@ def main():
     character = st.session_state.character
 
     form = build_form(character)
+
+    st.write("###### *Note: Character generation can take 60+ seconds after submit.  Please be patient.*")
 
     if form.form_submit_button("Generate Character Sheet", use_container_width=True):
         portrait_placeholder = st.empty()
@@ -840,6 +841,7 @@ def main():
 
         st.session_state.character = character
         st.experimental_rerun()
+
 
 if __name__ == "__main__":
     main()
