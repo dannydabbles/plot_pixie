@@ -5,4 +5,4 @@ openai
 boto3
 requests
 fpdf
-langchain[all]
+langchain
