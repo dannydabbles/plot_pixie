@@ -822,7 +822,7 @@ def main():
 
                     try:
                         with st.spinner('Generating character portrait...'):
-                            st.session_state.portrait_filenames.append(generate_portrait(portrait_prompt, character_id, portrait_num))
+                            st.session_state.portrait_filenames.append(generate_portrait(portrait_prompt, character_id, num_portraits))
                     except Exception as e:
                         st.error(f"Error generating portrait: {str(e)}")
 
