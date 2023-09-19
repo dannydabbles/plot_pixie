@@ -10,6 +10,7 @@ import requests
 from uuid import uuid4
 from fpdf import FPDF
 from PIL import Image
+from langchain.utilities.dalle_image_generator import DallEAPIWrapper
 
 # Set configuration variables
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
@@ -94,7 +95,7 @@ s3_client = boto3.client(
     region_name=AWS_REGION_NAME
 )
 # Set the page configuration at the very top of the script
-st.set_page_config(page_title="D&D Character Creator", page_icon="📈")
+st.set_page_config(page_title="D&D Character Creator", page_icon="🐉")
 
 
 def character_name_to_id(character_name: str) -> str:
@@ -234,8 +235,7 @@ def generate_portrait(prompt: str, character_id: str, portrait_num: int) -> str:
     Returns:
         str: Filepath where the portrait is saved.
     """
-    response = openai.Image.create(prompt=prompt, n=1, size="256x256")
-    image_url = response.data[0]['url']
+    image_url = DallEAPIWrapper(n=1, size="256x256").run(prompt)
     
     return save_dalle_image_to_s3(image_url, character_id, portrait_num)
 
@@ -544,7 +544,9 @@ def save_character_json_to_s3(character_id: str, character: dict, unprocessed: b
     Saves the character JSON to S3.
 
     Args:
+        character_id (str): The character ID.
         character (dict): The character data to save.
+        unprocessed (bool, optional): Whether or not the character is unprocessed. Defaults to False.
 
     Returns:
         None
@@ -554,7 +556,7 @@ def save_character_json_to_s3(character_id: str, character: dict, unprocessed: b
         try:
             s3_key = None
             if unprocessed:
-                s3_key = f"sheets/{character_id}/{character['name']}_unprocessed.json"
+                s3_key = f"sheets/{character_id}/_unprocessed.json"
             else:
                 s3_key = f"sheets/{character_id}/{character['name']}.json"
             character_data = character.copy()
@@ -708,10 +710,34 @@ def main():
     Main function for the D&D Character Creator app.
     """
     st.markdown("# D&D Character Creator")
-    st.markdown("###### *Fill what you like,*")
-    st.markdown("###### *or leave a space,*")
-    st.markdown("###### *my magic will craft a matching face...*")
-  
+
+    with st.expander("How to Use the App: A Poem"):
+        st.markdown("""
+        *Fill what you like,*  
+        *or leave a space,*  
+        *my magic will craft a matching face.*  
+        **For novices and masters, heed this rhyme,**  
+        **Follow these steps, one at a time:**
+
+        1. Begin with your character's name so neat,  
+           A personal touch makes the journey complete.
+        2. Choose a class, be it rogue or mage,  
+           Each has its skills, so set your stage.
+        3. Adjust the fields, pick traits that fit,  
+           Strength, wisdom, or charm? You commit.
+        4. Add equipment, potions, and gear,  
+           Essentials for quests, far and near.
+
+
+        *Remember, options can be left in a haze,*  
+        *And the system's magic will craft in its own ways.*  
+        *Review your creation, see it come alive,*  
+        *Edit, save, and share, watch your character thrive.*  
+
+        *So dive into this app, and let stories unfurl,*  
+        *Craft, play, and explore, in this new open world.*  
+        """)
+
     if 'character' not in st.session_state or not st.session_state.character:
         st.session_state.character = default_character()
 
@@ -746,7 +772,7 @@ def main():
                             character[key] = random.choice(RACE_LIST)
 
             # Save the character data to a JSON file
-            save_character_json_to_s3(character_id, character, unprocessed=True)
+            orig_character = character.copy()
 
             # Generate the character if any data is missing
             if not all(value != "" for value in character.values()):
@@ -770,6 +796,7 @@ def main():
 
         # Generate the character ID
         character_id = character_name_to_id(character['name'])
+        save_character_json_to_s3(character_id, orig_character, unprocessed=True)
 
         with st.spinner('Generating PDF character sheet...'):
             try:
