@@ -1,15 +1,17 @@
 import streamlit as st
 
+# Set page config
 st.set_page_config(
-    page_title="PlotPixie",
-    page_icon="🧙",
+    page_title="PlotPixie 🧙‍♂️✨",
+    page_icon="🧙‍♂️✨",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Sidebar
 st.sidebar.title("PlotPixie 🧙‍♂️✨")
-st.sidebar.write("Your ultimate D&D assistant.")
+st.sidebar.write("Your AI D&D assistant.")
 st.sidebar.success("Select a dungeon master's assistant above.")
-st.sidebar.image("path_to_your_image_or_gif.gif", caption="D&D Adventure", use_column_width=True) # Replace with an actual image path
 
 st.write("# Welcome to PlotPixie! 🐉")
 
@@ -21,7 +23,7 @@ st.write("""
 - 🎭 **Craft Your Backstory:** Every hero has a tale. Forge your character's backstory, traits, etc. with our intuitive tool.
 - 📜 **Character Sheet (PDF):** Once your choices are made, get a complete character sheet PDF for your newly minted character.
 """)
-st.button("Create Your Character Now!")
+
 
 # Hackathon Mention
 st.subheader("PlotPixie at Streamlit Hackathon 2023")

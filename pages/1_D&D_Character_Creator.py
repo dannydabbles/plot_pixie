@@ -96,6 +96,11 @@ s3_client = boto3.client(
 )
 # Set the page configuration at the very top of the script
 st.set_page_config(page_title="D&D Character Creator", page_icon="🐉")
+# Sidebar
+st.sidebar.title("D&D Character Creator 🐉")
+st.sidebar.write("Your AI D&D Character Creator.")
+
+st.write("# Welcome to D&D Character Creator! 🐉")
 
 
 def character_name_to_id(character_name: str) -> str:

@@ -1,7 +1,7 @@
-# Makefile for Streamlit application.
+# Makefile for PlotPixie Streamlit application.
 
 # Variables
-ST_APP=main.py
+ST_APP=plotpixie.py
 
 .PHONY: help clean lint
 
