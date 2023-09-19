@@ -6,7 +6,7 @@ Craft the perfect character with just a few clicks. Dive into a world of endless
 
 - **Personalized Character Names:** Begin your journey with a unique name.
 - **Class Selection:** Whether you're a rogue, mage, or any other class, set your stage with diverse choices.
-- **Attribute Sliders:** Adjust strength, wisdom, charm, and more to tailor your character's skills.
+- **Attribute Fields:** Adjust strength, wisdom, charm, and more to tailor your character's skills.
 - **Equipment & Gear:** Equip your character with essential items for quests near and far.
 
 ### How to Use
@@ -22,7 +22,7 @@ Follow these steps, one at a time:
    A personal touch makes the journey complete.
 2. Choose a class, be it rogue or mage,  
    Each has its skills, so set your stage.
-3. Adjust the sliders, pick traits that fit,  
+3. Adjust the fields, pick traits that fit,  
    Strength, wisdom, or charm? You commit.
 4. Add equipment, potions, and gear,  
    Essentials for quests, far and near.
