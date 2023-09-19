@@ -421,7 +421,7 @@ def build_form(character: dict) -> st.form:
     """
     # If there's a valid PDF path in the session state, display the download button
     if 'pdf_url' in st.session_state and st.session_state.pdf_url:
-        st.markdown(f"Download your character sheet [here]({st.session_state.pdf_url})")
+        st.markdown(f"Download your [character sheet PDF here]({st.session_state.pdf_url})")
 
     form = st.form(key='character_form', clear_on_submit=True)
 
