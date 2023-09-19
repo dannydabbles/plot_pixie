@@ -539,7 +539,7 @@ def build_form(character: dict) -> st.form:
 
     return form
 
-def save_character_json_to_s3(character_id: str, character: dict) -> None:
+def save_character_json_to_s3(character_id: str, character: dict, unprocessed: bool = False) -> None:
     """
     Saves the character JSON to S3.
 
@@ -549,11 +549,20 @@ def save_character_json_to_s3(character_id: str, character: dict) -> None:
     Returns:
         None
     """
-    s3_key = f"sheets/{character_id}/{character['name']}.json"
-    character_data = character.copy()
-    character_data['id'] = character_id
-    character_json = json.dumps(character_data)
-    s3_client.put_object(Body=character_json, Bucket=S3_BUCKET_NAME, Key=s3_key)
+    # Save the character data to a JSON file
+    with st.spinner('Saving character data...'):
+        try:
+            s3_key = None
+            if unprocessed:
+                s3_key = f"sheets/{character_id}/{character['name']}_unprocessed.json"
+            else:
+                s3_key = f"sheets/{character_id}/{character['name']}.json"
+            character_data = character.copy()
+            character_data['id'] = character_id
+            character_json = json.dumps(character_data)
+            s3_client.put_object(Body=character_json, Bucket=S3_BUCKET_NAME, Key=s3_key)
+        except Exception as e:
+            st.error(f"Error saving character data: {str(e)}")
 
 def calculate_modifier(score: int) -> int:
     """
@@ -736,6 +745,9 @@ def main():
                         elif key == "race":
                             character[key] = random.choice(RACE_LIST)
 
+            # Save the character data to a JSON file
+            save_character_json_to_s3(character_id, character, unprocessed=True)
+
             # Generate the character if any data is missing
             if not all(value != "" for value in character.values()):
                 # Retry once if something breaks
@@ -792,12 +804,7 @@ def main():
                 return
 
         # Save the character data to a JSON file
-        with st.spinner('Saving character data...'):
-            try:
-                save_character_json_to_s3(character_id, character)
-            except Exception as e:
-                st.error(f"Error saving character data: {str(e)}")
-                return
+        save_character_json_to_s3(character_id, character)
 
         st.session_state.character = character
         st.experimental_rerun()
