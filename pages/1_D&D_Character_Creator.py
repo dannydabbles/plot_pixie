@@ -340,7 +340,7 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     # Proficiencies & Languages
     add_section_header("Proficiencies & Languages", y_offset=10)
     add_key_value("Languages", character['languages'], w1=50, w2=140, ln=True)
-    add_key_value("Proficiencies", character['proficiencies'], w1=50, w2=140)
+    add_key_value("Proficiencies", character['proficiencies'], w1=50, w2=140, ln=True)
     
     # Character Traits
     add_section_header("Character Traits", y_offset=10)
@@ -356,7 +356,7 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     # Equipment & Treasure
     add_section_header("Equipment & Treasure", y_offset=10)
     add_key_value("Equipment", character['equipment'], w1=50, w2=140, ln=True)
-    add_key_value("Treasure", character['treasure'], w1=50, w2=140)
+    add_key_value("Treasure", character['treasure'], w1=50, w2=140, ln=True)
     
     # Attacks & Spellcasting
     add_section_header("Attacks & Spellcasting", y_offset=10)
