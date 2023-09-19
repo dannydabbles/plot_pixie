@@ -101,7 +101,7 @@ st.sidebar.title("D&D Character Creator 🐉")
 st.sidebar.write("Your AI D&D Character Creator.")
 
 st.write("# D&D Character Creator! 🐉")
-st.write("###### *Note: Character generation can take 60+ seconds after submit.  Please be patient.*")
+st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient.*")
 
 def character_name_to_id(character_name: str) -> str:
     """
@@ -749,7 +749,7 @@ def main():
 
     form = build_form(character)
 
-    st.write("###### *Note: Character generation can take 60+ seconds after submit.  Please be patient.*")
+    st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient.*")
 
     if form.form_submit_button("Generate Character Sheet", use_container_width=True):
         portrait_placeholder = st.empty()
