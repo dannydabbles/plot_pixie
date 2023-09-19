@@ -13,7 +13,7 @@ st.sidebar.title("PlotPixie 🧙‍♂️✨")
 st.sidebar.write("Your AI D&D assistant.")
 st.sidebar.success("Select a dungeon master's assistant above.")
 
-st.write("# Welcome to PlotPixie! 🐉")
+st.write("# Welcome to PlotPixie! 🧙‍♂️✨")
 
 # D&D Character Creator App
 st.subheader("D&D Character Creator App")
