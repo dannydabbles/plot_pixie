@@ -101,7 +101,7 @@ st.sidebar.title("D&D Character Creator 🐉")
 st.sidebar.write("Your AI D&D Character Creator.")
 
 st.write("# D&D Character Creator! 🐉")
-st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient.*")
+st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient, true magic can't be rushed.*")
 
 def character_name_to_id(character_name: str) -> str:
     """
@@ -240,7 +240,7 @@ def generate_portrait(prompt: str, character_id: str, portrait_num: int) -> str:
     Returns:
         str: Filepath where the portrait is saved.
     """
-    image_url = DallEAPIWrapper(n=1, size="256x256").run(prompt)
+    image_url = DallEAPIWrapper(n=portrait_num, size="256x256").run(prompt)
     
     return save_dalle_image_to_s3(image_url, character_id, portrait_num)
 
@@ -749,7 +749,7 @@ def main():
 
     form = build_form(character)
 
-    st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient.*")
+    st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient, true magic can't be rushed.*")
 
     if form.form_submit_button("Generate Character Sheet", use_container_width=True):
         portrait_placeholder = st.empty()
