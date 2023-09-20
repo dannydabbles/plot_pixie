@@ -172,22 +172,24 @@ def get_character_data(character: dict) -> str:
 
     print(f"Examples: {json.dumps(examples)}")
 
-    messages=[
-    {"role": "system", "content": "You are a dedicated assistant for dungeon masters. Your current task is to assist with filling out D&D character sheets."},
-    {"role": "system", "content": "The user may give you an incomplete character sheet in JSON format. You must complete it, ensuring there are no empty values for any known key. Infuse the character with unique details, but make sure it remains playable within D&D 5e rules. Additionally, provide a 'portrait_prompt' for creating a character portrait using DALLE."},
-    {"role": "system", "content": f"Here is a character sheet template for reference:\n\n{json.dumps(examples[0])}"},
-    {"role": "user", "content": "Help me generate or fill out D&D 5e character sheets. When you notice factual inconsistencies between values from different fields in the same character sheet, favor the information from the shorter value. Especially don't modify these fields: age, level, class, and race. Ensure the character's details are logically consistent and follow D&D 5e rules. Make sure spell fields are filled out or N/A depending on other relevant field values. Have fun with it, get creative."},
+    messages = [
+    {"role": "system", "content": "You are a dedicated assistant specializing in D&D character creation."},
+    {"role": "system", "content": "Users will provide incomplete character sheets in JSON format. Complete them by filling in missing details, ensuring no keys have empty values except sometimes N/A. Characters should be both unique and playable within D&D 5e rules."},
+    {"role": "system", "content": "Ensure all generated stats strictly adhere to D&D 5e rules for the specified level, class, and race of the character. Mark any fields that don't make sense for the given character's level, race, or class with N/A."},
+    {"role": "system", "content": "Provide a 'portrait_prompt' for each character. This prompt should be a detailed, evocative description tailored for DALL-E to visualize the character."},
+    {"role": "system", "content": f"Use the following character sheet template as a guide:\n\n{json.dumps(examples[0])}"},
+    {"role": "user", "content": "Fill out D&D 5e character sheets for me, ensuring stats are accurate for the character's level, class, and race--or N/A if not appropriate. Do not alter the age, level, class, or race fields if non-empty. Populate or mark spell fields as N/A based on the character's class and level. Skip any spells that aren't appropriate for the given character's level, class, or race according to D&D 5e rules."},
     {"role": "assistant", "content": f"{json.dumps(examples[1])}"},
-    {"role": "user", "content": "That's an excellent start. Now, generate a new character sheet for me."},
+    {"role": "user", "content": "Great! Now, craft a brand new character sheet for me."},
     {"role": "assistant", "content": f"{json.dumps(examples[2])}"}
     ]
 
-    # Loop through each character example as a user/asistant message pair
+    # Loop through each character example as a user/assistant message pair
     for example in examples[3:]:
-        messages.append({"role": "user", "content": "Now, generate a new character sheet for me."})
+        messages.append({"role": "user", "content": "Craft another unique character sheet for me, ensuring stats align with D&D 5e rules and paying special attention to the portrait prompt."})
         messages.append({"role": "assistant", "content": f"{json.dumps(example)}"})
 
-    messages.append({"role": "user", "content": f"Now, complete this random unrelated character sheet for me.  Only return valid JSON.\n\n{json.dumps(character)}"})
+    messages.append({"role": "user", "content": f"Complete this character sheet for me, ensuring it's a valid JSON and stats are consistent with D&D 5e rules:\n\n{json.dumps(character)}"})
 
     print(f"Messages: {json.dumps(messages)}")
     response = openai.ChatCompletion.create(
@@ -513,10 +515,10 @@ def build_form(character: dict) -> st.form:
 
         # Spellcasting
         with st.expander("Spellcasting (Optional)"):
-            cols = st.columns(4)
-            character['spellcasting_ability'] = cols[1].text_input("Spellcasting Ability", character.get('spellcasting_ability', ''), key='spells_ability_input')
-            character['spell_save_dc'] = cols[2].text_input("Spell Save DC", character.get('spell_save_dc', ''), key='spells_save_dc_input')
-            character['spell_attack_bonus'] = cols[3].text_input("Spell Attack Bonus", character.get('spell_attack_bonus', ''), key='spells_attack_bonus_input')
+            cols = st.columns(3)
+            character['spellcasting_ability'] = cols[0].text_input("Spellcasting Ability", character.get('spellcasting_ability', ''), key='spells_ability_input')
+            character['spell_save_dc'] = cols[1].text_input("Spell Save DC", character.get('spell_save_dc', ''), key='spells_save_dc_input')
+            character['spell_attack_bonus'] = cols[2].text_input("Spell Attack Bonus", character.get('spell_attack_bonus', ''), key='spells_attack_bonus_input')
 
         # Spells Known
         with st.expander("Spells Known (Optional)"):
@@ -576,59 +578,9 @@ def calculate_modifier(score: int) -> int:
     """
     return (score - 10) // 2
 
-def generate_character_sheet_stats(character: dict) -> dict:
+def validate_and_fix_character_sheet(character: dict) -> tuple:
     """
-    Generate or overwrite character stats based on core stats.
-
-    Args:
-        character (dict): The character data.
-
-    Returns:
-        dict: The character data with updated stats.
-    """
-    
-    # Convert string stats to integers for calculations
-    for key in ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']:
-        character[key] = int(character[key])
-    
-    # Calculate ability modifiers
-    str_mod = calculate_modifier(character['strength'])
-    dex_mod = calculate_modifier(character['dexterity'])
-    con_mod = calculate_modifier(character['constitution'])
-    int_mod = calculate_modifier(character['intelligence'])
-    wis_mod = calculate_modifier(character['wisdom'])
-    cha_mod = calculate_modifier(character['charisma'])
-    
-    # Proficiency Bonus
-    proficiency_bonus = int(character['proficiency_bonus'].replace("+", ""))
-    
-    # Update Saving Throws based on class
-    # For simplicity, assuming certain classes have proficiency in certain saves
-    if character['class'] == "Wizard":
-        character['intelligence_save'] = f"+{int_mod + proficiency_bonus}"
-        character['wisdom_save'] = f"+{wis_mod + proficiency_bonus}"
-    elif character['class'] == "Bard":
-        character['dexterity_save'] = f"+{dex_mod + proficiency_bonus}"
-        character['charisma_save'] = f"+{cha_mod + proficiency_bonus}"
-    elif character['class'] == "Cleric":
-        character['wisdom_save'] = f"+{wis_mod + proficiency_bonus}"
-        character['charisma_save'] = f"+{cha_mod + proficiency_bonus}"
-    else:  # Default case: No proficiency bonus added
-        character['strength_save'] = f"+{str_mod}"
-        character['dexterity_save'] = f"+{dex_mod}"
-        character['constitution_save'] = f"+{con_mod}"
-        character['intelligence_save'] = f"+{int_mod}"
-        character['wisdom_save'] = f"+{wis_mod}"
-        character['charisma_save'] = f"+{cha_mod}"
-    
-    # Calculate Armor Class (basic calculation)
-    character['armor_class'] = str(10 + dex_mod)
-    
-    return character
-
-def validate_character_sheet(character: dict) -> tuple:
-    """
-    Validate the character sheet for consistency and adherence to D&D 5e rules.
+    Validate and fix the character sheet.
 
     Args:
         character (dict): The character data.
@@ -640,16 +592,20 @@ def validate_character_sheet(character: dict) -> tuple:
     level = None
     try:
         level = int(character['level'])
-        if level < 1 or level > 20:
-            return False, f"Invalid character level: {level}. Level should be between 1 and 20."
+        if level < 1:
+            character['level'] = "1"
+        elif level > 20:
+            character['level'] = "20"
+        else:
+            character['level'] = random.randint(1, 20)
     except ValueError:
         return False, f"Character level is not a valid integer: {character['level']}"
 
     # Check if any X_level_spell keys have an empty value
-    spells_missing = False
     for key in character.keys():
-        if key.endswith("_level_spells") and character[key] == "":
-            character[key] = "N/A"
+        if key.endswith("_level_spells"):
+            if character[key] == "":
+                character[key] = "N/A"
 
     # Check if spell stats are empty
     if character['spell_save_dc'] == "":
@@ -658,6 +614,85 @@ def validate_character_sheet(character: dict) -> tuple:
         character['spellcasting_ability'] = "N/A"
     if character['spell_attack_bonus'] == "":
         character['spell_attack_bonus'] = "N/A"
+
+    # Get the character's level and class
+    character_level = int(character["level"])
+    experience_points = int(character["experience_points"].replace(",", ""))
+
+    # Verify experience points
+    if character_level == 1:
+        if 0 > experience_points > 300:
+            character["experience_points"] = 0
+    elif character_level == 2:
+        if 300 > experience_points > 900:
+            character["experience_points"] = 300
+    elif character_level == 3:
+        if 900 > experience_points > 2700:
+            character["experience_points"] = 900
+    elif character_level == 4:
+        if 2700 > experience_points > 6500:
+            character["experience_points"] = 2700
+    elif character_level == 5:
+        if 6500 > experience_points > 14000:
+            character["experience_points"] = 6500
+    elif character_level == 6:
+        if 14000 > experience_points > 23000:
+            character["experience_points"] = 14000
+    elif character_level == 7:
+        if 23000 > experience_points > 34000:
+            character["experience_points"] = 23000
+    elif character_level == 8:
+        if 34000 > experience_points > 48000:
+            character["experience_points"] = 34000
+    elif character_level == 9:
+        if 48000 > experience_points > 64000:
+            character["experience_points"] = 48000
+    elif character_level == 10:
+        if 64000 > experience_points > 85000:
+            character["experience_points"] = 64000
+    elif character_level == 11:
+        if 85000 > experience_points > 100000:
+            character["experience_points"] = 85000
+    elif character_level == 12:
+        if 100000 > experience_points > 120000:
+            character["experience_points"] = 100000
+    elif character_level == 13:
+        if 120000 > experience_points > 140000:
+            character["experience_points"] = 120000
+    elif character_level == 14:
+        if 140000 > experience_points > 165000:
+            character["experience_points"] = 140000
+    elif character_level == 15:
+        if 165000 > experience_points > 195000:
+            character["experience_points"] = 165000
+    elif character_level == 16:
+        if 195000 > experience_points > 225000:
+            character["experience_points"] = 195000
+    elif character_level == 17:
+        if 225000 > experience_points > 265000:
+            character["experience_points"] = 225000
+    elif character_level == 18:
+        if 265000 > experience_points > 305000:
+            character["experience_points"] = 265000
+    elif character_level == 19:
+        if 305000 > experience_points > 355000:
+            character["experience_points"] = 305000
+    elif character_level >= 20:
+        if 355000 > experience_points:
+            character["experience_points"] = 355000
+
+    # Iterate through spell levels
+    for level in range(1, 10):  # Levels 1 through 9
+        spell_key = f"{level}_level_spells"
+
+        # Check if the spell level exists in the character sheet
+        if spell_key in character:
+            # Get the spells of that level
+            spells = character[spell_key]
+
+            # Check if the character level allows spells of this level
+            if level > character_level:
+                return False, f"Invalid spell level: Character is level {character_level}, but has spells of level {level}."
 
     # List of essential keys
     essential_keys = ["name", "level", "class", "strength", "dexterity", "constitution", 
@@ -671,7 +706,7 @@ def validate_character_sheet(character: dict) -> tuple:
    
     # 2. Ensure core stats are between 1 and 30
     for key in ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']:
-        if not 1 <= character[key] <= 30:
+        if not 1 <= int(character[key]) <= 30:
             return False, f"Invalid value for {key}: {character[key]}"
     
     # 3. Ensure proficiency bonus is consistent with the character's level
@@ -692,10 +727,6 @@ def validate_character_sheet(character: dict) -> tuple:
     # 4. Check Armor Class (basic check)
     if not 10 <= int(character['armor_class']) <= 30:
         return False, f"Invalid Armor Class: {character['armor_class']}"
-
-    # Check if spells are missing for level
-    if spells_missing:
-        return False, "Spells missing for level."
 
     # Return false if any fields have empty values
     for key in character.keys():
@@ -782,8 +813,7 @@ def main():
                     for idx in range(rabbit_hole_depth):
                         # Get character data from API, then munge and validate it
                         character = get_character_data(character)
-                        character = generate_character_sheet_stats(character)
-                        valid, error_message = validate_character_sheet(character)
+                        valid, error_message = validate_and_fix_character_sheet(character)
                         if valid:
                             continue
                         # If we've already tried to fix the character sheet
