@@ -692,7 +692,8 @@ def validate_and_fix_character_sheet(character: dict) -> tuple:
 
             # Check if the character level allows spells of this level
             if level > character_level:
-                return False, f"Invalid spell level: Character is level {character_level}, but has spells of level {level}."
+                # Clear all spells above the character's level
+                character[spell_key] = "N/A"
 
     # List of essential keys
     essential_keys = ["name", "level", "class", "strength", "dexterity", "constitution", 
