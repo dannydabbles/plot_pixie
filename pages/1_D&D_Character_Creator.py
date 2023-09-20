@@ -614,64 +614,63 @@ def validate_and_fix_character_sheet(character: dict) -> tuple:
     # Get the character's level and class
     experience_points = int(str(character["experience_points"]).replace(",", ""))
 
-    import ipdb; ipdb.set_trace()
     # Verify experience points
     if level == 1:
-        if 0 >= experience_points < 300:
+        if 0 >= experience_points or experience_points > 300:
             character["experience_points"] = 0
     elif level == 2:
-        if 300 >= experience_points < 900:
+        if 300 >= experience_points or experience_points > 900:
             character["experience_points"] = 300
     elif level == 3:
-        if 900 >= experience_points < 2700:
+        if 900 >= experience_points or experience_points > 2700:
             character["experience_points"] = 900
     elif level == 4:
-        if 2700 >= experience_points < 6500:
+        if 2700 >= experience_points or experience_points > 6500:
             character["experience_points"] = 2700
     elif level == 5:
-        if 6500 >= experience_points < 14000:
+        if 6500 >= experience_points or experience_points > 14000:
             character["experience_points"] = 6500
     elif level == 6:
-        if 14000 >= experience_points < 23000:
+        if 14000 >= experience_points or experience_points > 23000:
             character["experience_points"] = 14000
     elif level == 7:
-        if 23000 >= experience_points < 34000:
+        if 23000 >= experience_points or experience_points > 34000:
             character["experience_points"] = 23000
     elif level == 8:
-        if 34000 >= experience_points < 48000:
+        if 34000 >= experience_points or experience_points > 48000:
             character["experience_points"] = 34000
     elif level == 9:
-        if 48000 >= experience_points < 64000:
+        if 48000 >= experience_points or experience_points > 64000:
             character["experience_points"] = 48000
     elif level == 10:
-        if 64000 >= experience_points < 85000:
+        if 64000 >= experience_points or experience_points > 85000:
             character["experience_points"] = 64000
     elif level == 11:
-        if 85000 >= experience_points < 100000:
+        if 85000 >= experience_points or experience_points > 100000:
            character["experience_points"] = 85000
     elif level == 12:
-        if 100000 >= experience_points < 120000:
+        if 100000 >= experience_points or experience_points > 120000:
             character["experience_points"] = 100000
     elif level == 13:
-        if 120000 >= experience_points < 140000:
+        if 120000 >= experience_points or experience_points > 140000:
             character["experience_points"] = 120000
     elif level == 14:
-        if 140000 >= experience_points < 165000:
+        if 140000 >= experience_points or experience_points > 165000:
             character["experience_points"] = 140000
     elif level == 15:
-        if 165000 >= experience_points < 195000:
+        if 165000 >= experience_points or experience_points > 195000:
             character["experience_points"] = 165000
     elif level == 16:
-        if 195000 >= experience_points < 225000:
+        if 195000 >= experience_points or experience_points > 225000:
             character["experience_points"] = 195000
     elif level == 17:
-        if 225000 >= experience_points < 265000:
+        if 225000 >= experience_points or experience_points > 265000:
             character["experience_points"] = 225000
     elif level == 18:
-        if 265000 >= experience_points < 305000:
+        if 265000 >= experience_points or experience_points > 305000:
             character["experience_points"] = 265000
     elif level == 19:
-        if 305000 >= experience_points < 355000:
+        if 305000 >= experience_points or experience_points > 355000:
             character["experience_points"] = 305000
     elif level >= 20:
         if 355000 >= experience_points:
