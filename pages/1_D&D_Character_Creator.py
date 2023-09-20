@@ -817,8 +817,11 @@ def main():
                         valid, error_message, character = validate_and_fix_character_sheet(character)
                         if valid:
                             continue
+
+                        st.session_state.character = character
+
                         # If we've already tried to fix the character sheet
-                        elif idx == rabbit_hole_depth - 1:
+                        if idx == rabbit_hole_depth - 1:
                             st.error(f"Error validating character sheet: {error_message}")
                             return
                 except Exception as e:
