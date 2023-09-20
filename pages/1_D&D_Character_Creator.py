@@ -679,6 +679,11 @@ def validate_character_sheet(character: dict) -> tuple:
     for key in character.keys():
         if key.endswith("_level_spells") and character[key] == "":
             character[key] = "N/A"
+        # If spell level exceeds level, set to N/A
+        if key.endswith("_level_spells"):
+            spell_level = int(key[0])
+            if spell_level > level:
+                character[key] = "N/A"
 
     # Check if spell stats are empty
     if character['spell_save_dc'] == "":
@@ -697,18 +702,6 @@ def validate_character_sheet(character: dict) -> tuple:
     
     # If all checks pass
     return True, "Character sheet is valid!"
-
-def fix_character_sheet(character: dict) -> dict:
-    """
-    Attempt to fix a character sheet that is invalid.
-
-    Args:
-        character (dict): The character data.
-
-    Returns:
-        dict: The character data with fixed values.
-    """
-
 
 def main():
     """
@@ -745,7 +738,7 @@ def main():
     if 'character' not in st.session_state or not st.session_state.character:
         st.session_state.character = default_character()
 
-    character = st.session_state.character
+    character = st.session_state.character.copy()
 
     form = build_form(character)
 
@@ -777,11 +770,10 @@ def main():
                         elif key == "race":
                             character[key] = random.choice(RACE_LIST)
 
-            # Save the character data to a JSON file
-            orig_character = character.copy()
-
             # Generate the character if any data is missing
-            if not all(value != "" for value in character.values()):
+            some_values_missing = any(value == "" for value in character.values())
+            character_sheet_changed = character != st.session_state.character
+            if some_values_missing or character_sheet_changed:
                 # Retry once if something breaks
                 rabbit_hole_depth = 2
                 try:
@@ -802,7 +794,7 @@ def main():
 
         # Generate the character ID
         character_id = character_name_to_id(character['name'])
-        save_character_json_to_s3(character_id, orig_character, unprocessed=True)
+        save_character_json_to_s3(character_id, st.session_state.character, unprocessed=True)
 
         with st.spinner('Generating PDF character sheet...'):
             try:
