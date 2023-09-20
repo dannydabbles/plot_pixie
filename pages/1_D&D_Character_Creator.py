@@ -176,7 +176,7 @@ def get_character_data(character: dict) -> str:
     {"role": "system", "content": "You are a dedicated assistant for dungeon masters. Your current task is to assist with filling out D&D character sheets."},
     {"role": "system", "content": "The user may give you an incomplete character sheet in JSON format. You must complete it, ensuring there are no empty values for any known key. Infuse the character with unique details, but make sure it remains playable within D&D 5e rules. Additionally, provide a 'portrait_prompt' for creating a character portrait using DALLE."},
     {"role": "system", "content": f"Here is an example character sheet for reference:\n\n{json.dumps(examples[0])}"},
-    {"role": "user", "content": "Help me generate or fill out D&D 5e character sheets. Retain any existing non-empty values without modification, especially: age, level, class, and race. Ensure the character's details are consistent, follow D&D 5e rules, and are formatted as text strings. Impress me and follow my lead."},
+    {"role": "user", "content": "Help me generate or fill out D&D 5e character sheets. When you notice factual inconsistencies between values from different fields in the same character sheet, favor the information from the shorter value. Especially don't modify these fields: age, level, class, and race. Ensure the character's details are logically consistent and follow D&D 5e rules. Have fun with it, get creative."},
     {"role": "assistant", "content": f"{json.dumps(examples[1])}"},
     {"role": "user", "content": "That's an excellent start. Now, generate a new character sheet for me."},
     {"role": "assistant", "content": f"{json.dumps(examples[2])}"}
@@ -685,11 +685,10 @@ def validate_character_sheet(character: dict) -> tuple:
             spell_level = int(key[0])
             if spell_level > level:
                 character[key] = "N/A"
-            elif character[key] == "N/A":
-                character[key] = ""
-                spells_missing = True
-    if spells_missing:
-        return False, "Spells missing for level."
+            elif spell_level <= level:
+                if character[key] == "" or character[key] == "N/A":
+                    character[key] = ""
+                    spells_missing = True
 
     # Check if spell stats are empty
     if character['spell_save_dc'] == "":
@@ -700,6 +699,10 @@ def validate_character_sheet(character: dict) -> tuple:
         character['spellcasting_ability'] = "N/A"
     if character['spell_attack_bonus'] == "":
         character['spell_attack_bonus'] = "N/A"
+
+    # Check if spells are missing for level
+    if spells_missing:
+        return False, "Spells missing for level."
 
     # Return false if any fields have empty values
     for key in character.keys():
@@ -778,7 +781,7 @@ def main():
 
             # Generate the character if any data is missing
             some_values_missing = any(value == "" for value in character.values())
-            character_sheet_changed = character != st.session_state.character
+            character_sheet_changed = any(character[key] != st.session_state.character[key] for key in character.keys())
             if some_values_missing or character_sheet_changed:
                 # Retry once if something breaks
                 rabbit_hole_depth = 2
