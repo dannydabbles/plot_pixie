@@ -464,7 +464,7 @@ def build_form(character: dict) -> st.form:
             character['intelligence'] = cols[0].text_input("Intelligence", character.get('intelligence', ''), key='stats_intelligence_input')
             character['wisdom'] = cols[1].text_input("Wisdom", character.get('wisdom', ''), key='stats_wisdom_input')
             character['charisma'] = cols[2].text_input("Charisma", character.get('charisma', ''), key='stats_charisma_input')
-            character['passive_wisdom'] = cols[3].text_input("Passive Wisdom (Perception)", character.get('passive_wisdom_perception', ''), key='stats_passive_wisdom_input')
+            character['passive_wisdom_perception'] = cols[3].text_input("Passive Wisdom (Perception)", character.get('passive_wisdom_perception', ''), key='stats_passive_wisdom_input')
             character['inspiration'] = cols[4].text_input("Inspiration", character.get('inspiration', ''), key='stats_inspiration_input')
             character['proficiency_bonus'] = cols[5].text_input("Proficiency Bonus", character.get('proficiency_bonus', ''), key='stats_proficiency_bonus_input')
 
@@ -689,6 +689,11 @@ def validate_and_fix_character_sheet(character: dict) -> tuple:
             if level < spell_level:
                 # Clear all spells above the character's level
                 character[spell_key] = "N/A"
+
+    if level < 17:
+        spell_key = "9_level_spells"
+        if character[spell_key] != "N/A":
+            character[spell_key] = "N/A"
 
     # List of essential keys
     essential_keys = ["name", "level", "class", "strength", "dexterity", "constitution", 
