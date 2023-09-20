@@ -676,6 +676,7 @@ def validate_character_sheet(character: dict) -> tuple:
         return False, f"Invalid Armor Class: {character['armor_class']}"
 
     # Check if any X_level_spell keys have an empty value
+    spells_missing = False
     for key in character.keys():
         if key.endswith("_level_spells") and character[key] == "":
             character[key] = "N/A"
@@ -684,6 +685,11 @@ def validate_character_sheet(character: dict) -> tuple:
             spell_level = int(key[0])
             if spell_level > level:
                 character[key] = "N/A"
+            elif character[key] == "N/A":
+                character[key] = ""
+                spells_missing = True
+    if spells_missing:
+        return False, "Spells missing for level."
 
     # Check if spell stats are empty
     if character['spell_save_dc'] == "":
