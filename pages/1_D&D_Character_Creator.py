@@ -27,6 +27,7 @@ CHARACTER_SHEET_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "character_sheets")
 DATA_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "data")
 PAGES_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "pages")
 MAX_TOKENS = 1500
+DEBUG = False
 
 # Ensure directories exist
 os.makedirs(IMAGE_DIRECTORY, exist_ok=True)
@@ -170,7 +171,8 @@ def get_character_data(character: dict) -> str:
     """
     examples = get_character_examples()
 
-    print(f"Examples: {json.dumps(examples)}")
+    if DEBUG:
+        print(f"Examples: {json.dumps(examples)}")
 
     messages = [
     {"role": "system", "content": "You are a dedicated assistant specializing in D&D character creation."},
@@ -191,13 +193,16 @@ def get_character_data(character: dict) -> str:
 
     messages.append({"role": "user", "content": f"Complete this character sheet for me, ensuring it's a valid JSON and stats are consistent with D&D 5e rules:\n\n{json.dumps(character)}"})
 
-    print(f"Messages: {json.dumps(messages)}")
+    if DEBUG:
+        print(f"Messages: {json.dumps(messages)}")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-16k", messages=messages, max_tokens=MAX_TOKENS
     )
-    print(f"Response: {json.dumps(response)}")
+    if DEBUG:
+        print(f"Response: {json.dumps(response)}")
     result = json.loads(response.choices[0].message.content)
-    print(f"Result: {json.dumps(result)}")
+    if DEBUG:
+        print(f"Result: {json.dumps(result)}")
     return result
 
 def save_dalle_image_to_s3(image_url: str, character_id: str, portrait_num: int) -> str:
