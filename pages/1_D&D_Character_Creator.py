@@ -191,7 +191,7 @@ def get_character_data(character: dict) -> str:
         messages.append({"role": "user", "content": "Craft another unique character sheet for me, ensuring stats align with D&D 5e rules and paying special attention to the portrait prompt."})
         messages.append({"role": "assistant", "content": f"{json.dumps(example)}"})
 
-    messages.append({"role": "user", "content": f"Complete this character sheet for me, ensuring it's a valid JSON and stats are consistent with D&D 5e rules:\n\n{json.dumps(character)}"})
+    messages.append({"role": "user", "content": f"Here is JSON for an incomplete character sheet:{json.dumps(character)}\n\nFill it out for me, ensuring stats align with D&D 5e rules and logically matches the incomplete character sheet's non-empty fields. Make sure numeric fields parse to int."})
 
     if DEBUG:
         print(f"Messages: {json.dumps(messages)}")
