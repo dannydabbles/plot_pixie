@@ -3,14 +3,13 @@ import sys
 import json
 import boto3
 import random
-import openai
 import streamlit as st
 import pandas as pd
 import requests
+from openai import OpenAI
 from uuid import uuid4
 from fpdf import FPDF
 from PIL import Image
-from langchain.utilities.dalle_image_generator import DallEAPIWrapper
 
 # Set configuration variables
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
@@ -95,6 +94,7 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=AWS_REGION_NAME
 )
+openai_client = OpenAI()
 # Set the page configuration at the very top of the script
 st.set_page_config(page_title="D&D Character Creator", page_icon="🐉")
 # Sidebar
@@ -195,11 +195,15 @@ def get_character_data(character: dict) -> str:
 
     if DEBUG:
         print(f"Messages: {json.dumps(messages)}")
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-16k", messages=messages, max_tokens=MAX_TOKENS
+    response = openai_client.chat.completions.create(
+        model="gpt-4-turbo-preview",
+        messages=messages,
+        max_tokens=MAX_TOKENS,
+        response_format={ "type": "json_object" }
     )
     if DEBUG:
         print(f"Response: {json.dumps(response)}")
+    print(f"Response for response.choices[0].message.content: {response.choices[0].message.content}")
     result = json.loads(response.choices[0].message.content)
     if DEBUG:
         print(f"Result: {json.dumps(result)}")
@@ -247,7 +251,15 @@ def generate_portrait(prompt: str, character_id: str, portrait_num: int) -> str:
     Returns:
         str: Filepath where the portrait is saved.
     """
-    image_url = DallEAPIWrapper(n=portrait_num, size="256x256").run(prompt)
+    response = openai_client.images.generate(
+        model="dall-e-3",
+        prompt=prompt,
+        size="1024x1024",
+        quality="hd",
+        n=portrait_num,
+    )
+
+    image_url = response.data[0].url
     
     return save_dalle_image_to_s3(image_url, character_id, portrait_num)
 
