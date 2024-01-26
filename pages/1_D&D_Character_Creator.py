@@ -795,7 +795,7 @@ def main():
 
     st.write("###### *Note: Character generation can take 60+ seconds.  Please be patient, true magic can't be rushed.*")
 
-    if form.form_submit_button("Generate Character Sheet", use_container_width=True):
+    if form.form_submit_button("Generate New Character Sheet", use_container_width=True):
         portrait_placeholder = st.empty()
         save_button_placeholder = st.empty()
 
