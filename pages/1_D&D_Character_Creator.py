@@ -275,6 +275,9 @@ def create_pdf_character_sheet(character_id: str, character: dict, portrait_file
     Returns:
         str: The URL for the uploaded file.
     """
+    # Make sure all values of character are strings
+    character = {k: str(v).encode("utf8") for k, v in character.items()}
+
     pdf = FPDF()
     pdf.add_page()
     
